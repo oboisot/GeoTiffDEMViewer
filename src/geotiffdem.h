@@ -24,8 +24,7 @@ public:
     /*! ********************************************************************
     * \brief GeoTiffDEM
     *********************************************************************/
-    GeoTiffDEM( std::filesystem::path demPath );
-    GeoTiffDEM( const char* demPath );
+    GeoTiffDEM();
 
     // ============== DESTRUCTOR ==============
     //! Default destructor
@@ -43,7 +42,13 @@ public:
     double getYmax() const;
     double getdY() const;
     double getNoDataValue() const;
+    bool isOpened() const;
+    GeoTiffDEMAxes getAxesUnit() const;
     void printPrettySpatialRef() const;
+        // setter
+    void open( std::filesystem::path demPath );
+    void open( const char *demPath );
+    void close();
 
     double **readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
                                        const std::size_t &pXmax, const std::size_t &pYmax,
@@ -151,6 +156,8 @@ private:
     GDALRasterBand            *m_rasterBand;     // GeoTiff Raster band
     OGRSpatialReference       *m_geoSpatialRef;  // GeoTiff Spatial Reference
     GeoTiffDEMAxes m_axes;
+        // Check state of opened dataset
+    bool m_datasetOpened = false;
         // Size of the dataset
     std::size_t m_rasterXSize,
                 m_rasterYSize;
@@ -165,7 +172,7 @@ private:
     std::size_t m_lineBufferSize;
 
     // ============== PRIVATE CLASS METHODS ==============
-    void initializeGeoTiffDEM();
+    void initializeGeoTiffDEM(std::filesystem::path demPath);
         //
     // T -> type of the temporary line reading buffer, depending on raster band type
     template<typename T>

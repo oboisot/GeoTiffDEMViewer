@@ -19,13 +19,15 @@ set(CMAKE_AUTOUIC ON)
 set(GTIFFDEMVIEWER_HEADERS # GeoTiff DEM
                            src/geotiffdem.h
                            # UI
-                           src/ui/geotiffdemviewerwindow.h)
+                           src/ui/geotiffdemviewerwindow.h
+                           src/ui/demcolormap.h)
 
 # Sources list
 set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            src/geotiffdem.cpp
                            # UI
                            src/ui/geotiffdemviewerwindow.cpp
+                           src/ui/demcolormap.cpp
                            # Main
                            GeoTiffDEMViewer.cpp)
 

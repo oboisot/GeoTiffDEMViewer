@@ -1,34 +1,27 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef GEOTIFFDEMVIEWERWINDOW_H
+#define GEOTIFFDEMVIEWERWINDOW_H
 
 #include <iostream>
 #include <QMainWindow>
-#include "qcustomplot.h"
+#include "demcolormap.h"
 
-class MainWindow : public QMainWindow
+class GeoTiffDEMViewerWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit GeoTiffDEMViewerWindow(QWidget *parent = nullptr);
+    ~GeoTiffDEMViewerWindow();
 
-    void initCustomPlot();
-
-    QCustomPlot *customPlot = new QCustomPlot;
+    DEMColorMap *demCmap;
 
 public slots:
-    void print(QMouseEvent *event);
+    void dataCursorChanged(const QString &value);
+
+protected:
+    void closeEvent(QCloseEvent *event);
 
 private:
-    std::size_t m_num_graph = 0;
-    QList<QColor> m_color_default = {
-        QColor(31, 119, 180),
-        QColor(255, 127, 14),
-        QColor(44, 160, 44),
-        QColor(214, 39, 40),
-        QColor(148, 103, 189)
-    };
 };
 
-#endif // MAINWINDOW_H
+#endif // GEOTIFFDEMVIEWERWINDOW_H

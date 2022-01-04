@@ -1,18 +1,13 @@
 #include "geotiffdem.h"
 
 // ============== CONSTRUCTOR ==============
-GeoTiffDEM::GeoTiffDEM( std::filesystem::path demPath )
-    : m_demPath( demPath ) { this->initializeGeoTiffDEM(); }
-
-GeoTiffDEM::GeoTiffDEM( const char* demPath )
-    : m_demPath( demPath ) { this->initializeGeoTiffDEM(); }
-
+GeoTiffDEM::GeoTiffDEM() {}
 
 // ============== DESTRUCTOR ==============
 //! Default destructor
 GeoTiffDEM::~GeoTiffDEM()
 {
-    GDALClose( m_dataset );
+    this->close();
 //    OGRSpatialReference::DestroySpatialReference( m_geoSpatialRef ); => Fait crasher le programme !
 }
 
@@ -28,7 +23,34 @@ double GeoTiffDEM::getYmin() const { return m_Ymin; }
 double GeoTiffDEM::getYmax() const { return m_Ymax; }
 double GeoTiffDEM::getdY() const { return m_dY; }
 double GeoTiffDEM::getNoDataValue() const { return m_noDataValue; }
+bool GeoTiffDEM::isOpened() const { return m_datasetOpened; }
+GeoTiffDEMAxes GeoTiffDEM::getAxesUnit() const { return m_axes; }
 void GeoTiffDEM::printPrettySpatialRef() const { m_geoSpatialRef->dumpReadable(); }
+    // setter
+void GeoTiffDEM::open(std::filesystem::path demPath)
+{
+    if ( !m_datasetOpened )
+        this->initializeGeoTiffDEM(demPath);
+    else
+        throw std::runtime_error("GeoTiffDEM::open Error: A dataset is already opened! "
+                                 "Close it with GeoTiffDEM::close() befor opening another dataset.");
+}
+void GeoTiffDEM::open(const char *demPath)
+{
+    if ( !m_datasetOpened )
+        this->initializeGeoTiffDEM(demPath);
+    else
+        throw std::runtime_error("GeoTiffDEM::open Error: A dataset is already opened! "
+                                 "Close it with GeoTiffDEM::close() befor opening another dataset.");
+}
+void GeoTiffDEM::close()
+{
+    if ( m_datasetOpened )
+    {
+        GDALClose( m_dataset );
+        m_datasetOpened = false;
+    }
+}
 
 
 double **GeoTiffDEM::readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
@@ -271,14 +293,17 @@ void GeoTiffDEM::deleteZbuffer(const std::size_t &rowSize, double **zbuffer)
 
 
 // ============== PRIVATE CLASS METHODS ==============
-void GeoTiffDEM::initializeGeoTiffDEM()
+void GeoTiffDEM::initializeGeoTiffDEM(std::filesystem::path demPath)
 {
-    GDALAllRegister(); // Initialize GDAL drivers
+//    GDALAllRegister(); // Initialize GDAL drivers
+    // Initialize path
+    m_demPath = demPath;
     // Opening dataset
     m_dataset = (GDALDataset*) GDALOpen( m_demPath.c_str(), GA_ReadOnly );
     if ( m_dataset == NULL )
         throw std::runtime_error("GeoTiffDEM Error: Unable to open\n '" +
                                  m_demPath.string() + "' GeoTiff file.");
+    m_datasetOpened = true;
     // Getting raster extensions
     m_rasterXSize = m_dataset->GetRasterXSize();
     m_rasterYSize = m_dataset->GetRasterYSize();
