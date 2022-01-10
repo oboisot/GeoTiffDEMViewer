@@ -8,7 +8,9 @@
 #include "gdal_priv.h"
 #include "ogr_spatialref.h" // for OGRSpatialReference
 
-enum GeoTiffDEMAxes
+namespace fs = std::filesystem;
+
+enum GeoTiffDEMAxesUnit
 {
     /*! Longitude/Latitude referential in degrees.*/
     LonLat,
@@ -16,6 +18,14 @@ enum GeoTiffDEMAxes
     NorthEast,
     /*! Undefined referential, fallback to pixels.*/
     Pixels
+};
+
+enum GeoTiffDEMinterp
+{
+    /*! Nearest Neighbor interpolation.*/
+    Nearest,
+    /*! Bilinear interpolation.*/
+    Linear,
 };
 
 class GeoTiffDEM
@@ -32,7 +42,7 @@ public:
 
     // ============== CLASS METHODS ==============
         // getter
-    std::filesystem::path getPath() const;
+    fs::path getPath() const;
     std::size_t getRasterXSize() const;
     std::size_t getRasterYSize() const;
     double getXmin() const;
@@ -43,97 +53,88 @@ public:
     double getdY() const;
     double getNoDataValue() const;
     bool isOpened() const;
-    GeoTiffDEMAxes getAxesUnit() const;
+    GeoTiffDEMAxesUnit getAxesUnit() const;
     void printPrettySpatialRef() const;
         // setter
-    void open( std::filesystem::path demPath );
+    void initDrivers();
+    void destroyDrivers();
+    void open( fs::path demPath );
     void open( const char *demPath );
     void close();
 
-    double **readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
-                                       const std::size_t &pXmax, const std::size_t &pYmax,
+    //! readFromPixelsboundingBox
+    /*! Read part of the Geotiff DEM into a 2D buffer array from pixels coordinates
+     *  bounding box.
+     *
+     * \brief readFromPixelsboundingBox
+     * \param [in] pXmin The pixel offset from the top left corner of the region to
+     *                   be accessed. This would be zero to start from the left side.
+     * \param [in] pYmin The line offset from the top left corner of the region to be accessed.
+     *                   This would be zero to start from the top.
+     * \param [in] pXmax The pixel offset to the top left corner of the region greater than
+     *                   nXmin. This defines the pixel range to be accessed.
+     * \param [in] pYmax The line offset to the top left corner of the region grater than
+     *                   nYmin. This defines the line range to be accessed.
+     * \param [out] bufXSize
+     * \param [out] bufYSize
+     *
+     * \return zbuffer
+     */
+    double **readFromPixelsBoundingBox(const std::size_t &pXmin, const std::size_t &pYmin, // Upper-left corner
+                                       const std::size_t &pXmax, const std::size_t &pYmax, // Lower-right corner
                                        std::size_t &zbufXsize, std::size_t &zbufYsize);
 
     //! readFromPixelsboundingBox
     /*! Oveloaded function which computes the zbuffer min (zbufZmin) and max (zbufZmax)
      *  values taking into account the nodata values.
      */
-    double **readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
-                                       const std::size_t &pXmax, const std::size_t &pYmax,
+    double **readFromPixelsBoundingBox(const std::size_t &pXmin, const std::size_t &pYmin, // Upper-left corner
+                                       const std::size_t &pXmax, const std::size_t &pYmax, // Lower-right corner
                                        std::size_t &zbufXsize, std::size_t &zbufYsize,
                                        double &zbufZmin, double &zbufZmax);
-    //! readFromPixelsboundingBox
-    /*! Read part of the Geotiff DEM into a 2D buffer array from pixels coordinates
-     *  bounding box.
-     *
-     * \brief readFromPixelsboundingBox
-     * \param [in] pXmin The pixel offset to the top left corner of the region to
-     *                   be accessed. This would be zero to start from the left side.
-     * \param [in] pYmin The line offset to the top left corner of the region to be accessed.
-     *                   This would be zero to start from the top.
-     * \param [in] pXmax The pixel offset to the top left corner of the region greater than
-     *                   nXmin. This defines the pixel range to be accessed.
-     * \param [in] pYmax The line offset to the top left corner of the region grater than
-     *                   nYmin. This defines the line range to be accessed.
-     * \param [out] dpX
-     * \param [out] dpY
-     * \param [out] bufXSize
-     * \param [out] bufYSize
-     * \param [out] bufZmin
-     * \param [out] bufZmax
-     * \param [in] nXSize [optional] The size in pixels of the returned X dimension of the
-     *                    region to be accessed. nXSize must be greater than nXmax-nXmin+1.
-     *                    This parameter is mainly used for decimation in the X dimension.
-     *                    If nXSize is not a multiple of nXmax-nXmin+1, due to the evenly
-     *                    spaced decimation, the resulting nXmax may be greater than the
-     *                    requested one.
-     * \param [in] nYSize [optional] The size in pixels of the returned Y dimension of the
-     *                    region to be accessed. nYSize must be greater than nYmax-nYmin+1.
-     *                    This parameter is mainly used for decimation in the Y dimension.
-     *                    If nYSize is not a multiple of nYmax-nYmin+1, due to the evenly
-     *                    spaced decimation, the resulting nYmin may be greater than the
-     *                    requested one.
-     *
-     * \return buffer2D
-     */
-    double **readInterpolateFromPixelsboundingBox(const double &pX0, const double &pY0,  // Upper-left corner
-                                                  const double &pX1, const double &pY1,  // Lower-right corner
-                                                  const std::size_t &nXsize, const std::size_t &nYsize);
 
-    double **readInterpolateFromPixelsboundingBox(const double &pX0, const double &pY0,  // Upper-left corner
-                                                  const double &pX1, const double &pY1,  // Lower-right corner
-                                                  const std::size_t &nXsize, const std::size_t &nYsize,
-                                                  double &zbufZmin, double &zbufZmax);
+    double **interpFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                         const double &pX1, const double &pY1,  // Lower-right corner
+                                         const std::size_t &nXsize, const std::size_t &nYsize,
+                                         GeoTiffDEMinterp interp=GeoTiffDEMinterp::Linear);
+
+    double **interpFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                         const double &pX1, const double &pY1,  // Lower-right corner
+                                         const std::size_t &nXsize, const std::size_t &nYsize,
+                                         double &zbufZmin, double &zbufZmax,
+                                         GeoTiffDEMinterp interp=GeoTiffDEMinterp::Linear);
 
     //! readFromXYboundingBox
     /*! Read part of the Geotiff DEM into a 2D buffer array from natural coordinates
      *  bounding box, e.g., longitude/latitude or northing/easting.
      */
-    double **readFromXYboundingBox(const double &Xmin, const double &Ymin,
-                                   const double &Xmax, const double &Ymax,
-                                   double &XminEx, double &YminEx,
-                                   double &XmaxEx, double &YmaxEx,
+    double **readFromXYboundingBox(const double &Xmin, const double &Ymax, // Upper-left corner
+                                   const double &Xmax, const double &Ymin, // Lower-right corner
+                                   double &XminEx, double &YmaxEx, // Returned Upper-left corner
+                                   double &XmaxEx, double &YminEx, // Returned Lower-right corner
                                    std::size_t &zbufXsize, std::size_t &zbufYsize);
 
     //! readFromXYboundingBox
     /*! Oveloaded function which computes the zbuffer min (zbufZmin) and max (zbufZmax)
      *  values taking into account the nodata values.
      */
-    double **readFromXYboundingBox(const double &Xmin, const double &Ymin,
-                                   const double &Xmax, const double &Ymax,
-                                   double &XminEx, double &YminEx,
-                                   double &XmaxEx, double &YmaxEx,
+    double **readFromXYboundingBox(const double &Xmin, const double &Ymax, // Upper-left corner
+                                   const double &Xmax, const double &Ymin, // Lower-right corner
+                                   double &XminEx, double &YmaxEx, // Returned Upper-left corner
+                                   double &XmaxEx, double &YminEx, // Returned Lower-right corner
                                    std::size_t &zbufXsize, std::size_t &zbufYsize,
                                    double &zbufZmin, double &zbufZmax);
 
-    double **readInterpolateFromXYboundingBox(const double &X0, const double &Y0,  // Upper-left corner
-                                              const double &X1, const double &Y1,  // Lower-right corner
-                                              const std::size_t &nXsize, const std::size_t &nYsize);
+    double **interpFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                     const double &Xmax, const double &Ymin,  // Lower-right corner
+                                     const std::size_t &nXsize, const std::size_t &nYsize,
+                                     GeoTiffDEMinterp interp=GeoTiffDEMinterp::Linear);
 
-    double **readInterpolateFromXYboundingBox(const double &X0, const double &Y0,  // Upper-left corner
-                                              const double &X1, const double &Y1,  // Lower-right corner
-                                              const std::size_t &nXsize, const std::size_t &nYsize,
-                                              double &zbufZmin, double &zbufZmax);
+    double **interpFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                     const double &Xmax, const double &Ymin,  // Lower-right corner
+                                     const std::size_t &nXsize, const std::size_t &nYsize,
+                                     double &zbufZmin, double &zbufZmax,
+                                     GeoTiffDEMinterp interp=GeoTiffDEMinterp::Linear);
 
     //! getAltAtPixels
     /*! Read or interpolate linearly the altitude value at pixels
@@ -149,13 +150,13 @@ public:
 
     void deleteZbuffer(const std::size_t &rowSize, double **zbuffer);
 
-private:
-    // ============== PRIVATE CLASS MEMBERS ==============
-    std::filesystem::path      m_demPath;        // GeoTiff data path
-    GDALDataset               *m_dataset;        // GeoTiff GDAL dataset
-    GDALRasterBand            *m_rasterBand;     // GeoTiff Raster band
-    OGRSpatialReference       *m_geoSpatialRef;  // GeoTiff Spatial Reference
-    GeoTiffDEMAxes m_axes;
+protected:
+    // ============== PROTECTED CLASS MEMBERS ==============
+    fs::path            m_demPath;        // GeoTiff data path
+    GDALDataset         *m_dataset;       // GeoTiff GDAL dataset
+    GDALRasterBand      *m_rasterBand;    // GeoTiff Raster band
+    OGRSpatialReference *m_geoSpatialRef; // GeoTiff Spatial Reference
+    GeoTiffDEMAxesUnit  m_axes;           // GeoTiff axes unit
         // Check state of opened dataset
     bool m_datasetOpened = false;
         // Size of the dataset
@@ -168,42 +169,103 @@ private:
     double m_noDataValue;
         // Type of the dataset raster band
     GDALDataType m_dataType;
-        // Get default block sizes
+        // Get default line block sizes
     std::size_t m_lineBufferSize;
 
+private:
     // ============== PRIVATE CLASS METHODS ==============
-    void initializeGeoTiffDEM(std::filesystem::path demPath);
-        //
+    void initializeGeoTiffDEM(fs::path demPath);
+    //################################################//
+    double **interpNNFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                           const double &pX1, const double &pY1,  // Lower-right corner
+                                           const std::size_t &nXsize, const std::size_t &nYsize);
+
+    double **interpNNFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                           const double &pX1, const double &pY1,  // Lower-right corner
+                                           const std::size_t &nXsize, const std::size_t &nYsize,
+                                           double &zbufZmin, double &zbufZmax);
+
+    //! interpLinFromPixelsboundingBox
+    /*! Read and interpolate linearly the DEM into z-buffer from (floating) pixels
+     *  bounding box.
+     *  Contrary to readFromPixelsboundingBox, the returned z-buffer contains values
+     *  linearly interpolated at the pixels bounding box values and inside, in
+     *  correspondence with the asked number of points in both dimensions.
+     *  If the asked size is smaller than the native DEM spacing, data are decimated
+     *  linearly, otherwise they are upsampled linearly.
+     */
+    double **interpLinFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                            const double &pX1, const double &pY1,  // Lower-right corner
+                                            const std::size_t &nXsize, const std::size_t &nYsize);
+
+    //! interpLinFromPixelsboundingBox
+    /*! Oveloaded function which computes the zbuffer min (zbufZmin) and max (zbufZmax)
+     *  values taking into account the nodata values.
+     */
+    double **interpLinFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                            const double &pX1, const double &pY1,  // Lower-right corner
+                                            const std::size_t &nXsize, const std::size_t &nYsize,
+                                            double &zbufZmin, double &zbufZmax);
+    //################################################//
+    double **interpNNFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                       const double &Xmax, const double &Ymin,  // Lower-right corner
+                                       const std::size_t &nXsize, const std::size_t &nYsize);
+
+    double **interpNNFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                       const double &Xmax, const double &Ymin,  // Lower-right corner
+                                       const std::size_t &nXsize, const std::size_t &nYsize,
+                                       double &zbufZmin, double &zbufZmax);
+
+    //! interpLinFromXYboundingBox
+    /*! Read and interpolate linearly the DEM into z-buffer from (floating) pixels
+     *  bounding box.
+     *
+     */
+    double **interpLinFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                        const double &Xmax, const double &Ymin,  // Lower-right corner
+                                        const std::size_t &nXsize, const std::size_t &nYsize);
+
+    double **interpLinFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                        const double &Xmax, const double &Ymin,  // Lower-right corner
+                                        const std::size_t &nXsize, const std::size_t &nYsize,
+                                        double &zbufZmin, double &zbufZmax);
+    //################################################//
     // T -> type of the temporary line reading buffer, depending on raster band type
     template<typename T>
-    void fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
-                     const std::size_t &zbufXsize, const std::size_t &zbufYsize,
-                     double **zbuffer);
+    void readToZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
+                       const std::size_t &zbufXsize, const std::size_t &zbufYsize,
+                       double **zbuffer);
     // T -> type of the temporary line reading buffer, depending on raster band type
     // fillZbuffer: overloaded function which computes zmin and zmax while
     // filling z-buffer taking into account nodata values.
     template<typename T>
-    void fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
-                     const std::size_t &zbufXsize, const std::size_t &zbufYsize,
-                     double **zbuffer, double &zbufZmin, double &zbufZmax);
+    void readToZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
+                       const std::size_t &zbufXsize, const std::size_t &zbufYsize,
+                       double **zbuffer, double &zbufZmin, double &zbufZmax);
     // T -> type of the temporary line reading buffer, depending on raster band type
     template<typename T>
-    void fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
-                     const std::size_t &bufXSize, const std::size_t &bufYSize,
-                     const std::size_t &stepX, const std::size_t &stepY,
-                     double **zbuffer, double &bufZmin, double &bufZmax);
+    void interpNNToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                           const double &pX1, const double &pY1,  // Lower-right corner
+                           const std::size_t &nXsize, const std::size_t &nYsize,
+                           double **zbuffer);
     // T -> type of the temporary line reading buffer, depending on raster band type
     template<typename T>
-    void interpolateFillZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
-                                const double &pX1, const double &pY1,  // Lower-right corner
-                                const std::size_t &nXsize, const std::size_t &nYsize,
-                                double **zbuffer);
+    void interpNNToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                           const double &pX1, const double &pY1,  // Lower-right corner
+                           const std::size_t &nXsize, const std::size_t &nYsize,
+                           double **zbuffer, double &zbufZmin, double &zbufZmax);
     // T -> type of the temporary line reading buffer, depending on raster band type
     template<typename T>
-    void interpolateFillZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
-                                const double &pX1, const double &pY1,  // Lower-right corner
-                                const std::size_t &nXsize, const std::size_t &nYsize,
-                                double **zbuffer, double &zbufZmin, double &zbufZmax);
+    void interpLinToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                            const double &pX1, const double &pY1,  // Lower-right corner
+                            const std::size_t &nXsize, const std::size_t &nYsize,
+                            double **zbuffer);
+    // T -> type of the temporary line reading buffer, depending on raster band type
+    template<typename T>
+    void interpLinToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                            const double &pX1, const double &pY1,  // Lower-right corner
+                            const std::size_t &nXsize, const std::size_t &nYsize,
+                            double **zbuffer, double &zbufZmin, double &zbufZmax);
 };
 
 #endif // GEOTIFFDEM_H

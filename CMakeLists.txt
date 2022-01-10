@@ -11,6 +11,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 # Instruct CMake to run uic automatically when needed.
 set(CMAKE_AUTOUIC ON)
+# Instruct CMake to run resource files automatically when needed.
+set(CMAKE_AUTORCC ON)
 
 ###################
 # SETTING LIB/EXE #
@@ -18,16 +20,18 @@ set(CMAKE_AUTOUIC ON)
 # Headers list
 set(GTIFFDEMVIEWER_HEADERS # GeoTiff DEM
                            src/geotiffdem.h
+                           src/qgeotiffdem.h
                            # UI
                            src/ui/geotiffdemviewerwindow.h
-                           src/ui/demcolormap.h)
+                           src/ui/qdemcolormap.h)
 
 # Sources list
 set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            src/geotiffdem.cpp
+                           src/qgeotiffdem.cpp
                            # UI
                            src/ui/geotiffdemviewerwindow.cpp
-                           src/ui/demcolormap.cpp
+                           src/ui/qdemcolormap.cpp
                            # Main
                            GeoTiffDEMViewer.cpp)
 

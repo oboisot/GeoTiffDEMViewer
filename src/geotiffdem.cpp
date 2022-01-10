@@ -13,7 +13,7 @@ GeoTiffDEM::~GeoTiffDEM()
 
 // ============== CLASS METHODS ==============
     // getter
-std::filesystem::path GeoTiffDEM::getPath() const { return m_demPath; }
+fs::path GeoTiffDEM::getPath() const { return m_demPath; }
 std::size_t GeoTiffDEM::getRasterXSize() const { return m_rasterXSize; }
 std::size_t GeoTiffDEM::getRasterYSize() const { return m_rasterYSize; }
 double GeoTiffDEM::getXmin() const { return m_Xmin; }
@@ -24,10 +24,12 @@ double GeoTiffDEM::getYmax() const { return m_Ymax; }
 double GeoTiffDEM::getdY() const { return m_dY; }
 double GeoTiffDEM::getNoDataValue() const { return m_noDataValue; }
 bool GeoTiffDEM::isOpened() const { return m_datasetOpened; }
-GeoTiffDEMAxes GeoTiffDEM::getAxesUnit() const { return m_axes; }
+GeoTiffDEMAxesUnit GeoTiffDEM::getAxesUnit() const { return m_axes; }
 void GeoTiffDEM::printPrettySpatialRef() const { m_geoSpatialRef->dumpReadable(); }
     // setter
-void GeoTiffDEM::open(std::filesystem::path demPath)
+void GeoTiffDEM::initDrivers() { GDALAllRegister(); }
+void GeoTiffDEM::destroyDrivers() { GDALDestroyDriverManager(); }
+void GeoTiffDEM::open(fs::path demPath)
 {
     if ( !m_datasetOpened )
         this->initializeGeoTiffDEM(demPath);
@@ -52,17 +54,19 @@ void GeoTiffDEM::close()
     }
 }
 
-
-double **GeoTiffDEM::readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
+//#####################################################//
+//########## FromPixelsBoundingBox functions ##########//
+//#####################################################//
+double **GeoTiffDEM::readFromPixelsBoundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
                                                const std::size_t &pXmax, const std::size_t &pYmax,
                                                std::size_t &zbufXsize, std::size_t &zbufYsize)
 {
     // Input parameters order check
     if ( pXmax < pXmin )
-        throw std::invalid_argument("GeoTiffDEM::readFromPixelsboundingBox Error: nXmax can't be "
+        throw std::invalid_argument("GeoTiffDEM::readFromPixelsBoundingBox Error: nXmax can't be "
                                     "smaller than nXmin.");
     if ( pYmax < pYmin )
-        throw std::invalid_argument("GeoTiffDEM::readFromPixelsboundingBox Error: nYmax can't be "
+        throw std::invalid_argument("GeoTiffDEM::readFromPixelsBoundingBox Error: nYmax can't be "
                                     "smaller than nYmin.");
     // Determining X and Y sizes
     zbufXsize = pXmax - pXmin + 1;
@@ -70,34 +74,33 @@ double **GeoTiffDEM::readFromPixelsboundingBox(const std::size_t &pXmin, const s
     // Fill zbuffer as function of raster data type
     double **zbuffer = new double*[zbufYsize];
     if ( m_dataType == GDT_Byte )
-        this->fillZbuffer<GByte>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<GByte>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_UInt16 )
-        this->fillZbuffer<GUInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<GUInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_Int16 )
-        this->fillZbuffer<GInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<GInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_UInt32 )
-        this->fillZbuffer<GUInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<GUInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_Int32 )
-        this->fillZbuffer<GInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<GInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_Float32 )
-        this->fillZbuffer<float>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<float>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     else if ( m_dataType == GDT_Float64 )
-        this->fillZbuffer<double>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
+        this->readToZbuffer<double>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer);
     return zbuffer;
 }
 
-
-double **GeoTiffDEM::readFromPixelsboundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
+double **GeoTiffDEM::readFromPixelsBoundingBox(const std::size_t &pXmin, const std::size_t &pYmin,
                                                const std::size_t &pXmax, const std::size_t &pYmax,
                                                std::size_t &zbufXsize, std::size_t &zbufYsize,
                                                double &zbufZmin, double &zbufZmax)
 {
     // Input parameters order check
     if ( pXmax < pXmin )
-        throw std::invalid_argument("GeoTiffDEM::readFromPixelsboundingBox Error: nXmax can't be "
+        throw std::invalid_argument("GeoTiffDEM::readFromPixelsBoundingBox Error: nXmax can't be "
                                     "smaller than nXmin.");
     if ( pYmax < pYmin )
-        throw std::invalid_argument("GeoTiffDEM::readFromPixelsboundingBox Error: nYmax can't be "
+        throw std::invalid_argument("GeoTiffDEM::readFromPixelsBoundingBox Error: nYmax can't be "
                                     "smaller than nYmin.");
     // Determining X and Y sizes
     zbufXsize = pXmax - pXmin + 1;
@@ -105,87 +108,65 @@ double **GeoTiffDEM::readFromPixelsboundingBox(const std::size_t &pXmin, const s
     // Fill zbuffer as function of raster data type
     double **zbuffer = new double*[zbufYsize];
     if ( m_dataType == GDT_Byte )
-        this->fillZbuffer<GByte>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<GByte>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_UInt16 )
-        this->fillZbuffer<GUInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<GUInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_Int16 )
-        this->fillZbuffer<GInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<GInt16>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_UInt32 )
-        this->fillZbuffer<GUInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<GUInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_Int32 )
-        this->fillZbuffer<GInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<GInt32>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_Float32 )
-        this->fillZbuffer<float>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
+        this->readToZbuffer<float>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     else if ( m_dataType == GDT_Float64 )
-        this->fillZbuffer<double>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
-    return zbuffer;
-}
-    //
-double **GeoTiffDEM::readInterpolateFromPixelsboundingBox(const double &pX0, const double &pY0,
-                                                          const double &pX1, const double &pY1,
-                                                          const std::size_t &nXsize, const std::size_t &nYsize)
-{
-    // Input parameters order check
-    if ( pX1 < pX0 )
-        throw std::invalid_argument("GeoTiffDEM::readInterpolateFromPixelsboundingBox Error: nXmax can't be "
-                                    "smaller than nXmin.");
-    if ( pY1 < pY0 )
-        throw std::invalid_argument("GeoTiffDEM::readInterpolateFromPixelsboundingBox Error: nYmax can't be "
-                                    "smaller than nYmin.");
-    // Fill Buffer2D as function of raster data type
-    double **zbuffer = new double*[nYsize];
-    if ( m_dataType == GDT_Byte )
-        this->interpolateFillZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_UInt16 )
-        this->interpolateFillZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_Int16 )
-        this->interpolateFillZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_UInt32 )
-        this->interpolateFillZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_Int32 )
-        this->interpolateFillZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_Float32 )
-        this->interpolateFillZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
-    else if ( m_dataType == GDT_Float64 )
-        this->interpolateFillZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+        this->readToZbuffer<double>(pXmin, pYmin, zbufXsize, zbufYsize, zbuffer, zbufZmin, zbufZmax);
     return zbuffer;
 }
 
-double **GeoTiffDEM::readInterpolateFromPixelsboundingBox(const double &pX0, const double &pY0,
-                                                          const double &pX1, const double &pY1,
-                                                          const std::size_t &nXsize, const std::size_t &nYsize,
-                                                          double &zbufZmin, double &zbufZmax)
+double **GeoTiffDEM::interpFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                                 const double &pX1, const double &pY1,  // Lower-right corner
+                                                 const std::size_t &nXsize, const std::size_t &nYsize,
+                                                 GeoTiffDEMinterp interp)
 {
-    // Input parameters order check
-    if ( pX1 < pX0 )
-        throw std::invalid_argument("GeoTiffDEM::readInterpolateFromPixelsboundingBox Error: nXmax can't be "
-                                    "smaller than nXmin.");
-    if ( pY1 < pY0 )
-        throw std::invalid_argument("GeoTiffDEM::readInterpolateFromPixelsboundingBox Error: nYmax can't be "
-                                    "smaller than nYmin.");
-    // Fill Buffer2D as function of raster data type
-    double **zbuffer = new double*[nYsize];
-    if ( m_dataType == GDT_Byte )
-        this->interpolateFillZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_UInt16 )
-        this->interpolateFillZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_Int16 )
-        this->interpolateFillZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_UInt32 )
-        this->interpolateFillZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_Int32 )
-        this->interpolateFillZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_Float32 )
-        this->interpolateFillZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    else if ( m_dataType == GDT_Float64 )
-        this->interpolateFillZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
-    return zbuffer;
+    if ( interp == Linear )
+        return this->interpLinFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize);
+    else if ( interp == Nearest )
+        return this->interpNNFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize);
+    else
+    {
+        std::cerr << "GeoTiffDEM::interpFromPixelsBoundingBox: Unrecognized interpolation method" << std::endl;
+        return nullptr;
+    }
 }
 
-double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymin,
-                                           const double &Xmax, const double &Ymax,
-                                           double &XminEx, double &YminEx,
-                                           double &XmaxEx, double &YmaxEx,
+double **GeoTiffDEM::interpFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                                 const double &pX1, const double &pY1,  // Lower-right corner
+                                                 const std::size_t &nXsize, const std::size_t &nYsize,
+                                                 double &zbufZmin, double &zbufZmax,
+                                                 GeoTiffDEMinterp interp)
+{
+    if ( interp == Linear )
+        return this->interpLinFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize, zbufZmin, zbufZmax);
+    else if ( interp == Nearest )
+        return this->interpNNFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize, zbufZmin, zbufZmax);
+    else
+    {
+        std::cerr << "GeoTiffDEM::interpFromPixelsBoundingBox: Unrecognized interpolation method" << std::endl;
+        return nullptr;
+    }
+}
+//############################################################//
+//########## END OF FromPixelsBoundingBox functions ##########//
+//############################################################//
+
+//#################################################//
+//########## FromXYBoundingBox functions ##########//
+//#################################################//
+double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymax,
+                                           const double &Xmax, const double &Ymin,
+                                           double &XminEx, double &YmaxEx,
+                                           double &XmaxEx, double &YminEx,
                                            std::size_t &zbufXsize, std::size_t &zbufYsize)
 {
     // Input parameters order check made in 'readFromPixelsboundingBox'
@@ -197,16 +178,16 @@ double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymi
     // Extracted buffer natural bounds
     XminEx = m_Xmin + pXmin * m_dX;
     XmaxEx = m_Xmin + pXmax * m_dX;
-    YminEx = m_Ymax + pYmax * m_dY;
     YmaxEx = m_Ymax + pYmin * m_dY;
+    YminEx = m_Ymax + pYmax * m_dY;
     //
-    return this->readFromPixelsboundingBox(pXmin, pYmin, pXmax, pYmax, zbufXsize, zbufYsize);
+    return this->readFromPixelsBoundingBox(pXmin, pYmin, pXmax, pYmax, zbufXsize, zbufYsize);
 }
 
-double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymin,
-                                           const double &Xmax, const double &Ymax,
-                                           double &XminEx, double &YminEx,
-                                           double &XmaxEx, double &YmaxEx,
+double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymax,
+                                           const double &Xmax, const double &Ymin,
+                                           double &XminEx, double &YmaxEx,
+                                           double &XmaxEx, double &YminEx,
                                            std::size_t &zbufXsize, std::size_t &zbufYsize,
                                            double &zbufZmin, double &zbufZmax)
 {
@@ -219,35 +200,40 @@ double **GeoTiffDEM::readFromXYboundingBox(const double &Xmin, const double &Ymi
     // Extracted buffer natural bounds
     XminEx = m_Xmin + pXmin * m_dX;
     XmaxEx = m_Xmin + pXmax * m_dX;
-    YminEx = m_Ymax + pYmax * m_dY;
     YmaxEx = m_Ymax + pYmin * m_dY;
+    YminEx = m_Ymax + pYmax * m_dY;
     //
-    return this->readFromPixelsboundingBox(pXmin, pYmin, pXmax, pYmax,
+    return this->readFromPixelsBoundingBox(pXmin, pYmin, pXmax, pYmax,
                                            zbufXsize, zbufYsize, zbufZmin, zbufZmax);
 }
 
-double **GeoTiffDEM::readInterpolateFromXYboundingBox(const double &X0, const double &Y0,  // Upper-left corner
-                                                      const double &X1, const double &Y1,  // Lower-right corner
-                                                      const std::size_t &nXsize, const std::size_t &nYsize)
+double **GeoTiffDEM::interpFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                             const double &Xmax, const double &Ymin,  // Lower-right corner
+                                             const std::size_t &nXsize, const std::size_t &nYsize,
+                                             GeoTiffDEMinterp interp)
 {
-    const double pX0 = (X0 - m_Xmin) / m_dX,
-                 pX1 = (X1 - m_Xmin) / m_dX,
-                 pY0 = (Y1 - m_Ymax) / m_dY,
-                 pY1 = (Y0 - m_Ymax) / m_dY;
-    return this->readInterpolateFromPixelsboundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize);
+    const double pX0 = (Xmin - m_Xmin) / m_dX,
+                 pX1 = (Xmax - m_Xmin) / m_dX,
+                 pY0 = (Ymax - m_Ymax) / m_dY,
+                 pY1 = (Ymin - m_Ymax) / m_dY;
+    return this->interpFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize, interp);
 }
 
-double **GeoTiffDEM::readInterpolateFromXYboundingBox(const double &X0, const double &Y0,  // Upper-left corner
-                                                      const double &X1, const double &Y1,  // Lower-right corner
-                                                      const std::size_t &nXsize, const std::size_t &nYsize,
-                                                      double &zbufZmin, double &zbufZmax)
+double **GeoTiffDEM::interpFromXYboundingBox(const double &Xmin, const double &Ymax,  // Upper-left corner
+                                             const double &Xmax, const double &Ymin,  // Lower-right corner
+                                             const std::size_t &nXsize, const std::size_t &nYsize,
+                                             double &zbufZmin, double &zbufZmax,
+                                             GeoTiffDEMinterp interp)
 {
-    const double pX0 = (X0 - m_Xmin) / m_dX,
-                 pX1 = (X1 - m_Xmin) / m_dX,
-                 pY0 = (Y1 - m_Ymax) / m_dY,
-                 pY1 = (Y0 - m_Ymax) / m_dY;
-    return this->readInterpolateFromPixelsboundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize, zbufZmin, zbufZmax);
+    const double pX0 = (Xmin - m_Xmin) / m_dX,
+                 pX1 = (Xmax - m_Xmin) / m_dX,
+                 pY0 = (Ymax - m_Ymax) / m_dY,
+                 pY1 = (Ymin - m_Ymax) / m_dY;
+    return this->interpFromPixelsBoundingBox(pX0, pY0, pX1, pY1, nXsize, nYsize, zbufZmin, zbufZmax, interp);
 }
+//########################################################//
+//########## END OF FromXYBoundingBox functions ##########//
+//########################################################//
 
 double GeoTiffDEM::getZAtPixels(const double &pX, const double &pY)
 {
@@ -266,7 +252,7 @@ double GeoTiffDEM::getZAtPixels(const double &pX, const double &pY)
         pYmax = m_rasterYSize - 1;
         pYmin = pYmax - 1;
     }
-    double **zbuffer = this->readFromPixelsboundingBox(pXmin, pYmin, pXmax, pYmax,
+    double **zbuffer = this->readFromPixelsBoundingBox(pXmin, pYmin, pXmax, pYmax,
                                                        zbufXsize, zbufYsize);
     double dX0 = pXmax - pX,
            dY0 = pYmax - pY,
@@ -293,9 +279,8 @@ void GeoTiffDEM::deleteZbuffer(const std::size_t &rowSize, double **zbuffer)
 
 
 // ============== PRIVATE CLASS METHODS ==============
-void GeoTiffDEM::initializeGeoTiffDEM(std::filesystem::path demPath)
+void GeoTiffDEM::initializeGeoTiffDEM(fs::path demPath)
 {
-//    GDALAllRegister(); // Initialize GDAL drivers
     // Initialize path
     m_demPath = demPath;
     // Opening dataset
@@ -312,17 +297,17 @@ void GeoTiffDEM::initializeGeoTiffDEM(std::filesystem::path demPath)
     if ( m_geoSpatialRef == NULL )
     {
         std::cerr << "GeoTiffDEM Warning: Projection definition not available." << std::endl;
-        m_axes = GeoTiffDEMAxes::Pixels;
+        m_axes = Pixels;
     }
     else
     {
         std::string axis = m_geoSpatialRef->GetAttrValue("AXIS", 0);
         if ( axis == "Latitude" || axis == "Longitude" )
-            m_axes = GeoTiffDEMAxes::LonLat;
+            m_axes = LonLat;
         else if ( axis == "Easting" || axis == "Northing" )
-            m_axes = GeoTiffDEMAxes::NorthEast;
+            m_axes = NorthEast;
         else
-            m_axes = GeoTiffDEMAxes::Pixels;
+            m_axes = Pixels;
     }
     // Getting geotransform
     double geotransform[6];
@@ -369,10 +354,135 @@ void GeoTiffDEM::initializeGeoTiffDEM(std::filesystem::path demPath)
     m_lineBufferSize = static_cast<std::size_t>(nXBlockSize * nYBlockSize);
 }
 
+//################################################//
+double **GeoTiffDEM::interpNNFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                                   const double &pX1, const double &pY1,  // Lower-right corner
+                                                   const std::size_t &nXsize, const std::size_t &nYsize)
+{
+    // Input parameters order check
+    if ( pX1 < pX0 )
+        throw std::invalid_argument("GeoTiffDEM::interpNNFromPixelsboundingBox Error: nXmax can't be "
+                                    "smaller than nXmin.");
+    if ( pY1 < pY0 )
+        throw std::invalid_argument("GeoTiffDEM::interpNNFromPixelsboundingBox Error: nYmax can't be "
+                                    "smaller than nYmin.");
+    // Fill Buffer2D as function of raster data type
+    double **zbuffer = new double*[nYsize];
+    if ( m_dataType == GDT_Byte )
+        this->interpNNToZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_UInt16 )
+        this->interpNNToZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Int16 )
+        this->interpNNToZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_UInt32 )
+        this->interpNNToZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Int32 )
+        this->interpNNToZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Float32 )
+        this->interpNNToZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Float64 )
+        this->interpNNToZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    return zbuffer;
+}
+
+double **GeoTiffDEM::interpNNFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
+                                                   const double &pX1, const double &pY1,  // Lower-right corner
+                                                   const std::size_t &nXsize, const std::size_t &nYsize,
+                                                   double &zbufZmin, double &zbufZmax)
+{
+    // Input parameters order check
+    if ( pX1 < pX0 )
+        throw std::invalid_argument("GeoTiffDEM::interpNNFromPixelsboundingBox Error: nXmax can't be "
+                                    "smaller than nXmin.");
+    if ( pY1 < pY0 )
+        throw std::invalid_argument("GeoTiffDEM::interpNNFromPixelsboundingBox Error: nYmax can't be "
+                                    "smaller than nYmin.");
+    // Fill Buffer2D as function of raster data type
+    double **zbuffer = new double*[nYsize];
+    if ( m_dataType == GDT_Byte )
+        this->interpNNToZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_UInt16 )
+        this->interpNNToZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Int16 )
+        this->interpNNToZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_UInt32 )
+        this->interpNNToZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Int32 )
+        this->interpNNToZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Float32 )
+        this->interpNNToZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Float64 )
+        this->interpNNToZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    return zbuffer;
+}
+
+    //
+double **GeoTiffDEM::interpLinFromPixelsBoundingBox(const double &pX0, const double &pY0,
+                                                    const double &pX1, const double &pY1,
+                                                    const std::size_t &nXsize, const std::size_t &nYsize)
+{
+    // Input parameters order check
+    if ( pX1 < pX0 )
+        throw std::invalid_argument("GeoTiffDEM::interpLinFromPixelsboundingBox Error: nXmax can't be "
+                                    "smaller than nXmin.");
+    if ( pY1 < pY0 )
+        throw std::invalid_argument("GeoTiffDEM::interpLinFromPixelsboundingBox Error: nYmax can't be "
+                                    "smaller than nYmin.");
+    // Fill Buffer2D as function of raster data type
+    double **zbuffer = new double*[nYsize];
+    if ( m_dataType == GDT_Byte )
+        this->interpLinToZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_UInt16 )
+        this->interpLinToZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Int16 )
+        this->interpLinToZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_UInt32 )
+        this->interpLinToZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Int32 )
+        this->interpLinToZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Float32 )
+        this->interpLinToZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    else if ( m_dataType == GDT_Float64 )
+        this->interpLinToZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer);
+    return zbuffer;
+}
+
+double **GeoTiffDEM::interpLinFromPixelsBoundingBox(const double &pX0, const double &pY0,
+                                                    const double &pX1, const double &pY1,
+                                                    const std::size_t &nXsize, const std::size_t &nYsize,
+                                                    double &zbufZmin, double &zbufZmax)
+{
+    // Input parameters order check
+    if ( pX1 < pX0 )
+        throw std::invalid_argument("GeoTiffDEM::interpLinFromPixelsboundingBox Error: nXmax can't be "
+                                    "smaller than nXmin.");
+    if ( pY1 < pY0 )
+        throw std::invalid_argument("GeoTiffDEM::interpLinFromPixelsboundingBox Error: nYmax can't be "
+                                    "smaller than nYmin.");
+    // Fill Buffer2D as function of raster data type
+    double **zbuffer = new double*[nYsize];
+    if ( m_dataType == GDT_Byte )
+        this->interpLinToZbuffer<GByte>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_UInt16 )
+        this->interpLinToZbuffer<GUInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Int16 )
+        this->interpLinToZbuffer<GInt16>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_UInt32 )
+        this->interpLinToZbuffer<GUInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Int32 )
+        this->interpLinToZbuffer<GInt32>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Float32 )
+        this->interpLinToZbuffer<float>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    else if ( m_dataType == GDT_Float64 )
+        this->interpLinToZbuffer<double>(pX0, pY0, pX1, pY1, nXsize, nYsize, zbuffer, zbufZmin, zbufZmax);
+    return zbuffer;
+}
+//################################################//
+
 template<typename T>
-void GeoTiffDEM::fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
-                             const std::size_t &zbufXsize, const std::size_t &zbufYsize,
-                             double **zbuffer)
+void GeoTiffDEM::readToZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
+                               const std::size_t &zbufXsize, const std::size_t &zbufYsize,
+                               double **zbuffer)
 {
     // filling resulting array
         // Temporary line reading buffer
@@ -389,9 +499,9 @@ void GeoTiffDEM::fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
 }
 
 template<typename T>
-void GeoTiffDEM::fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
-                             const std::size_t &zbufXsize, const std::size_t &zbufYsize,
-                             double **zbuffer, double &zbufZmin, double &zbufZmax)
+void GeoTiffDEM::readToZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
+                               const std::size_t &zbufXsize, const std::size_t &zbufYsize,
+                               double **zbuffer, double &zbufZmin, double &zbufZmax)
 {
     // Initialization of altitude min max search
     zbufZmin = std::numeric_limits<double>::max();
@@ -422,26 +532,110 @@ void GeoTiffDEM::fillZbuffer(const std::size_t &pXmin, const std::size_t &pYmin,
 }
 
 template<typename T>
-void GeoTiffDEM::interpolateFillZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
-                                        const double &pX1, const double &pY1,  // Lower-right corner
-                                        const std::size_t &nXsize, const std::size_t &nYsize,
-                                        double **zbuffer)
+void GeoTiffDEM::interpNNToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                                   const double &pX1, const double &pY1,  // Lower-right corner
+                                   const std::size_t &nXsize, const std::size_t &nYsize,
+                                   double **zbuffer)
 {
+    // Temporary line buffers
+    T *lineBuffer = new T[m_lineBufferSize];
     //
-    double dpX = (pX1 - pX0) / (nXsize - 1),
-           dpY = (pY1 - pY0) / (nYsize - 1);
+    double dpX = (nXsize > 1) ? ((pX1 - pX0) / (nXsize - 1)) : 0.0, // X interpolation step (Note: handles case of opening only a line, or a point)
+           dpY = (nYsize > 1) ? ((pY1 - pY0) / (nYsize - 1)) : 0.0, // Y interpolation step
+           pX, pY;             // floating point interpolation values
+    //
+    std::size_t pXint;
+    int pYint, _pYint = -1; // use of 'int' to allow initialization of _pYmin to -1
+    for ( std::size_t iY = 0 ; iY < nYsize ; ++iY ) // row loop
+    {
+        pY = pY0 + iY * dpY;
+        pYint = static_cast<int>(pY);
+        if ( pY - pYint > 0.5 ) pYint += 1; // if decimal part greater than half a pixel size, we take next index
+        if ( pYint > _pYint )
+            CPLErr er = m_rasterBand->ReadBlock( 0, pYint, lineBuffer );
+        zbuffer[iY] = new double[nXsize];
+        for ( std::size_t iX = 0 ; iX < nXsize ; ++iX ) // col loop
+        {
+            pX = pX0 + iX * dpX;
+            pXint = static_cast<std::size_t>(pX); // if decimal part greater than half a pixel size, we take next index
+            if ( pX - pXint > 0.5 ) pXint += 1;
+            zbuffer[iY][iX] = static_cast<double>(lineBuffer[pXint]);
+        }
+        _pYint = pYint;
+    }
+    // Delete temporary line buffers
+    delete [] lineBuffer;
+}
+
+template<typename T>
+void GeoTiffDEM::interpNNToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                                   const double &pX1, const double &pY1,  // Lower-right corner
+                                   const std::size_t &nXsize, const std::size_t &nYsize,
+                                   double **zbuffer, double &zbufZmin, double &zbufZmax)
+{
+    // nodata value handling
+    zbufZmin = std::numeric_limits<double>::max();
+    zbufZmax = std::numeric_limits<double>::min();
+    double epsilon = std::numeric_limits<double>::epsilon() * 10.0,
+           z;
+    // Temporary line buffers
+    T *lineBuffer = new T[m_lineBufferSize];
+    //
+    double dpX = (nXsize > 1) ? ((pX1 - pX0) / (nXsize - 1)) : 0.0, // X interpolation step (Note: handles case of opening only a line, or a point)
+           dpY = (nYsize > 1) ? ((pY1 - pY0) / (nYsize - 1)) : 0.0, // Y interpolation step
+           pX, pY;             // floating point interpolation values
+    //
+    std::size_t pXint;
+    int pYint, _pYint = -1; // use of 'int' to allow initialization of _pYmin to -1
+    for ( std::size_t iY = 0 ; iY < nYsize ; ++iY ) // row loop
+    {
+        pY = pY0 + iY * dpY;
+        pYint = static_cast<int>(pY);
+        if ( pY - pYint > 0.5 ) pYint += 1; // if decimal part greater than half a pixel size, we take next index
+        if ( pYint > _pYint )
+            CPLErr er = m_rasterBand->ReadBlock( 0, pYint, lineBuffer );
+        zbuffer[iY] = new double[nXsize];
+        for ( std::size_t iX = 0 ; iX < nXsize ; ++iX ) // col loop
+        {
+            pX = pX0 + iX * dpX;
+            pXint = static_cast<std::size_t>(pX);
+            if ( pX - pXint > 0.5 ) pXint += 1; // if decimal part greater than half a pixel size, we take next index
+            z = static_cast<double>(lineBuffer[pXint]);
+            // Compute Altmin/Altmax
+            if ( std::abs(z - m_noDataValue) > epsilon ) // Check for no data values
+            {
+                if ( z > zbufZmax ) zbufZmax = z;
+                if ( z < zbufZmin ) zbufZmin = z;
+            }
+            zbuffer[iY][iX] = z;
+        }
+        _pYint = pYint;
+    }
+    // Delete temporary line buffers
+    delete [] lineBuffer;
+}
+
+template<typename T>
+void GeoTiffDEM::interpLinToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                                    const double &pX1, const double &pY1,  // Lower-right corner
+                                    const std::size_t &nXsize, const std::size_t &nYsize,
+                                    double **zbuffer)
+{
     // nodata value handling
     double epsilon = std::numeric_limits<double>::epsilon() * 10.0;
     // Temporary line buffers
     T *lineBuffer0 = new T[m_lineBufferSize];
     T *lineBuffer1 = new T[m_lineBufferSize];
     //
+    double dpX = (nXsize > 1) ? ((pX1 - pX0) / (nXsize - 1)) : 0.0, // X interpolation step (Note: handles case of opening only a line, or a point)
+           dpY = (nYsize > 1) ? ((pY1 - pY0) / (nYsize - 1)) : 0.0, // Y interpolation step
+           pX, pY,             // floating point interpolation values
+           dX0, dX1, dY0, dY1, // fractional part of interpolation values
+           z00, z01, z10, z11; // buffer interpolation points.
+    //
     std::size_t pXmin, pXmax;
     int pYmin, pYmax, _pYmin = -1, // use of 'int' to allow initialization of _pYmin to -1
         rasterYsize = static_cast<int>(m_rasterYSize);
-    double pX, pY,             // floating point interpolation values
-           z00, z01, z10, z11, // Interpolation points.
-           dX0, dX1, dY0, dY1; //
     for ( std::size_t iY = 0 ; iY < nYsize ; ++iY ) // row loop
     {
         pY = pY0 + iY * dpY;
@@ -498,14 +692,11 @@ void GeoTiffDEM::interpolateFillZbuffer(const double &pX0, const double &pY0,  /
 }
 
 template<typename T>
-void GeoTiffDEM::interpolateFillZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
-                                        const double &pX1, const double &pY1,  // Lower-right corner
-                                        const std::size_t &nXsize, const std::size_t &nYsize,
-                                        double **zbuffer, double &zbufZmin, double &zbufZmax)
+void GeoTiffDEM::interpLinToZbuffer(const double &pX0, const double &pY0,  // Upper-left corner
+                                    const double &pX1, const double &pY1,  // Lower-right corner
+                                    const std::size_t &nXsize, const std::size_t &nYsize,
+                                    double **zbuffer, double &zbufZmin, double &zbufZmax)
 {
-    //
-    double dpX = (pX1 - pX0) / (nXsize - 1),
-           dpY = (pY1 - pY0) / (nYsize - 1);
     // nodata value handling
     zbufZmin = std::numeric_limits<double>::max();
     zbufZmax = std::numeric_limits<double>::min();
@@ -515,12 +706,15 @@ void GeoTiffDEM::interpolateFillZbuffer(const double &pX0, const double &pY0,  /
     T *lineBuffer0 = new T[m_lineBufferSize];
     T *lineBuffer1 = new T[m_lineBufferSize];
     //
+    double dpX = (nXsize > 1) ? ((pX1 - pX0) / (nXsize - 1)) : 0.0, // X interpolation step (Note: handles case of opening only a line, or a point)
+           dpY = (nYsize > 1) ? ((pY1 - pY0) / (nYsize - 1)) : 0.0, // Y interpolation step
+           pX, pY,             // floating point interpolation values
+           dX0, dX1, dY0, dY1, // fractional part of interpolation values
+           z00, z01, z10, z11; // buffer interpolation points.
+    //
     std::size_t pXmin, pXmax;
     int pYmin, pYmax, _pYmin = -1, // use of 'int' to allow initialization of _pYmin to -1
         rasterYsize = static_cast<int>(m_rasterYSize);
-    double pX, pY,             // floating point interpolation values
-           z00, z01, z10, z11, // Interpolation points.
-           dX0, dX1, dY0, dY1; //
     for ( std::size_t iY = 0 ; iY < nYsize ; ++iY ) // row loop
     {
         pY = pY0 + iY * dpY;

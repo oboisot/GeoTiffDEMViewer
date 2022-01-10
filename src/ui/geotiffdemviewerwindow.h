@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <QMainWindow>
-#include "demcolormap.h"
+#include "qdemcolormap.h"
 
 class GeoTiffDEMViewerWindow : public QMainWindow
 {
@@ -13,15 +13,24 @@ public:
     explicit GeoTiffDEMViewerWindow(QWidget *parent = nullptr);
     ~GeoTiffDEMViewerWindow();
 
-    DEMColorMap *demCmap;
-
-public slots:
-    void dataCursorChanged(const QString &value);
-
 protected:
-    void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event) override;
 
 private:
+    //
+    QDEMColorMap *m_demCmap;
+    // Menubar QWidgets
+    QFileDialog *m_openDialog;
+    // Status bar QWidgets
+    QLabel *m_infosLabel;
+    QLabel *m_coordLabel;
+    QProgressBar *m_progressBar;
+    //
+    void createDEMCmap();
+    void createMenubar();
+    void createStatusBar();
+    void createToolBar();
+    void createQDEMColorMap();
 };
 
 #endif // GEOTIFFDEMVIEWERWINDOW_H
