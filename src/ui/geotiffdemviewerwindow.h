@@ -22,15 +22,16 @@ private:
     // Menubar QWidgets
     QFileDialog *m_openDialog;
     // Status bar QWidgets
-    QLabel *m_infosLabel;
+    QLabel *m_statusLabel;
     QLabel *m_coordLabel;
+    QLabel *m_zoomLabel;
     QProgressBar *m_progressBar;
     //
-    void createDEMCmap();
+    void createQDEMColorMap();
     void createMenubar();
     void createStatusBar();
     void createToolBar();
-    void createQDEMColorMap();
+    void createCentralWidget();
 };
 
 #endif // GEOTIFFDEMVIEWERWINDOW_H

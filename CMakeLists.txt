@@ -9,10 +9,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
-# Instruct CMake to run uic automatically when needed.
-set(CMAKE_AUTOUIC ON)
 # Instruct CMake to run resource files automatically when needed.
 set(CMAKE_AUTORCC ON)
+# Instruct CMake to run uic automatically when needed.
+set(CMAKE_AUTOUIC ON)
 
 ###################
 # SETTING LIB/EXE #
@@ -33,7 +33,9 @@ set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            src/ui/geotiffdemviewerwindow.cpp
                            src/ui/qdemcolormap.cpp
                            # Main
-                           GeoTiffDEMViewer.cpp)
+                           GeoTiffDEMViewer.cpp
+                           # Resources files
+                           GeoTiffDEMViewer.qrc)
 
 add_executable(${PROJECT_NAME} ${GTIFFDEMVIEWER_HEADERS} ${GTIFFDEMVIEWER_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX # Needed for header files only
@@ -102,3 +104,5 @@ target_link_libraries(${PROJECT_NAME} ${QCUSTOMPLOT_SODIR})
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    ${QCUSTOMPLOT_SODIR} ${CMAKE_BINARY_DIR})
+
+

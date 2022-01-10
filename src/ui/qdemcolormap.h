@@ -41,6 +41,7 @@ public:
 
 signals:
     void statusChanged(const QString &status, QDEMStatusColor color);
+    void zoomChanged(const int &zoomLevel);
     void cmapCursorPosChanged(const QString &value);
     void progressChanged(const double &progress);    
 
@@ -72,7 +73,7 @@ private:
     // Private methods
     void replotAxesEquals();
     void getCmapNaturalBoundingBox(double &X0, double &Y1, double &X1, double &Y0);
-    void checkDEMPlotBBox();
+    bool checkDEMPlotBBox();
     //
 };
 

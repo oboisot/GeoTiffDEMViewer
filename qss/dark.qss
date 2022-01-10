@@ -1,0 +1,70 @@
+/* QMainWindow */
+QMainWindow {
+    background: '#000000';
+}
+
+/* QMenuBar */
+QMenuBar {
+    background: "#000000";
+    border: 1px solid #ffffff;
+}
+
+QMenuBar::item {
+    color : "#ffffff";
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding: 1px 10px;
+    background: "transparent";
+}
+
+QMenuBar::item:selected {
+    background: "#ffffff";
+    color: "#000000";
+}
+
+QMenuBar::item:pressed {
+    background: "#888888";
+}
+
+    /* QMenu */
+QMenu {
+    background: "#000000";
+    border: 1px solid #ffffff;
+}
+
+QMenu::item {
+    color : "#ffffff";
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding: 1px 10px;
+    background: "transparent";
+}
+
+QMenu::item:selected {
+    background: "#ffffff";
+    color: "#000000";
+}
+
+QMenu::item:pressed {
+    background: "#888888";
+}
+
+QMenu::separator {
+    background: "#ffffff";
+}
+
+/* QStatusBar */
+QStatusBar {
+    background: "#000000";
+    border-top: 1px solid #ffffff;
+}
+
+QLabel {
+    color: "#ffffff";
+}
+
+/* QToolBar */
+QToolBar {
+    background: "#000000";
+    border-top: 1px solid #ffffff;
+}
