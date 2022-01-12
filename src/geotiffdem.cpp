@@ -284,7 +284,7 @@ void GeoTiffDEM::initializeGeoTiffDEM(fs::path demPath)
     // Initialize path
     m_demPath = demPath;
     // Opening dataset
-    m_dataset = (GDALDataset*) GDALOpen( m_demPath.c_str(), GA_ReadOnly );
+    m_dataset = (GDALDataset*) GDALOpen( m_demPath.string().c_str(), GA_ReadOnly );
     if ( m_dataset == NULL )
         throw std::runtime_error("GeoTiffDEM Error: Unable to open\n '" +
                                  m_demPath.string() + "' GeoTiff file.");

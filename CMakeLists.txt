@@ -54,9 +54,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC libs/qcustomplot) # QCustomPlo
 # GDAL library #
 ################
 # Ajout du path 'anaconda' pour la recherche de librairie pour CMake
-set(GDAL_ANACONDA_PATH "/home/oboisot/anaconda3")
-    # Append lib and include directories to CMAKE_PREFIX_PATH
-list(APPEND CMAKE_PREFIX_PATH "${GDAL_ANACONDA_PATH}/lib" "${GDAL_ANACONDA_PATH}/include")
+if (WIN32)
+    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal
+else()
+    set(GDAL_CUSTOM_PATH "/home/oboisot/anaconda3") # Anaconda3 gdal
+endif()
+# Append lib and include directories to CMAKE_PREFIX_PATH
+list(APPEND CMAKE_PREFIX_PATH "${GDAL_CUSTOM_PATH}/lib" "${GDAL_CUSTOM_PATH}/include")
+
 find_package(GDAL REQUIRED)
 message("   -> GDAL include dir: ${GDAL_INCLUDE_DIRS}")
 message("   -> GDAL libraries: ${GDAL_LIBRARIES}")
@@ -95,9 +100,17 @@ endif()
 # QcustomPlot #
 ###############
 if(QCUSTOMPLOT_QT6)
-    set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt6QCustomPlot2.so")
+    if (WIN32)
+        set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt6QCustomPlot2.dll")
+    else()
+        set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt6QCustomPlot2.so")
+    endif()
 else()
-    set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt5QCustomPlot2.so")
+    if (WIN32)
+        set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt5QCustomPlot2.dll")
+    else()
+        set(QCUSTOMPLOT_SODIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/qcustomplot/libQt5QCustomPlot2.so")
+    endif()
 endif()
 # Linking with QCustomPlot library
 target_link_libraries(${PROJECT_NAME} ${QCUSTOMPLOT_SODIR})
