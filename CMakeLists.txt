@@ -89,11 +89,11 @@ endif()
 # Qt libraries for QCustomPlot #
 #################################
 if (QCUSTOMPLOT_QT6)
-    find_package(Qt6 COMPONENTS Core Widgets Gui PrintSupport REQUIRED)
-    target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Widgets Qt6::Gui Qt6::PrintSupport)
+    find_package(Qt6 COMPONENTS Core Widgets Gui PrintSupport Concurrent REQUIRED)
+    target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Widgets Qt6::Gui Qt6::PrintSupport Qt6::Concurrent)
 else()
-    find_package(Qt5 COMPONENTS Core Widgets Gui PrintSupport REQUIRED)
-    target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets Qt5::Gui Qt5::PrintSupport)
+    find_package(Qt5 COMPONENTS Core Widgets Gui PrintSupport Concurrent REQUIRED)
+    target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets Qt5::Gui Qt5::PrintSupport Qt6::Concurrent)
 endif()
 
 ###############

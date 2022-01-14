@@ -1,10 +1,9 @@
-#ifndef DEMCOLORMAP_H
-#define DEMCOLORMAP_H
+#ifndef QDEMCOLORMAP_H
+#define QDEMCOLORMAP_H
 
 #include <iostream>
 #include <filesystem>
-#include <limits>
-#include <QMainWindow>
+#include <QtConcurrent>
 #include "qcustomplot.h"
 #include "src/qgeotiffdem.h"
 
@@ -43,7 +42,8 @@ signals:
     void statusChanged(const QString &status, QDEMStatusColor color);
     void zoomChanged(const int &zoomLevel);
     void cmapCursorPosChanged(const QString &value);
-    void progressChanged(const double &progress);    
+    void progressChanged(const double &progress);
+    void cursorDEMChanged(const QCursor &cursor);
 
 private slots:
     void onProgressChanged(const double &progress);
@@ -70,6 +70,7 @@ private:
     GeoTiffDEMinterp m_interp;
     QPoint m_mousePressPos;
     int m_zoomLevel, m_zoomLevelMax, m_zoomInterpThreshold;
+    bool m_isPlotting, m_selectRectEnabled;
     // Private methods
     void replotAxesEquals();
     void getCmapNaturalBoundingBox(double &X0, double &Y1, double &X1, double &Y0);
@@ -77,4 +78,4 @@ private:
     //
 };
 
-#endif // DEMCOLORMAP_H
+#endif // QDEMCOLORMAP_H

@@ -5,7 +5,7 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     // QDEMColorMap
     createQDEMColorMap();
     //MenuBar
-    createMenubar();
+//    createMenubar();
     // StatusBar
     createStatusBar();
     // ToolBar
@@ -16,11 +16,11 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     setMouseTracking(true);
     setGeometry(600, 180, 720, 720);
     setMinimumSize(300, 300);
-    setWindowTitle("GeoTiffDEM");
+    setWindowTitle("GeoTiffDEM Viewer");
+    setAttribute(Qt::WA_Disabled, true);
     //
-//    QFile file(":/qss/dark/style.qss");
-    QFile file(":/qss/AMOLED.qss");
-    file.open(QFile::ReadOnly);
+    QFile file(":/qss/dark.qss");
+    file.open(QFile::Text |QFile::ReadOnly);
     QString styleSheet = QString::fromUtf8(file.readAll());
     qApp->setStyleSheet(styleSheet);
 }
@@ -37,37 +37,38 @@ void GeoTiffDEMViewerWindow::createQDEMColorMap()
     // Create QDEMColorMap
     GDALAllRegister(); // Initialize GDAL drivers
     m_demCmap = new QDEMColorMap();
+    connect(m_demCmap, &QDEMColorMap::cursorDEMChanged, this, [=](const QCursor &cursor){ setCursor(cursor); });
 }
 
 void GeoTiffDEMViewerWindow::createMenubar()
 {
-    // Open file QFfileDialog
-    m_openDialog = new QFileDialog(this);
-    m_openDialog->setWindowTitle(tr("Open a GeoTiff DEM file"));
-    m_openDialog->setAcceptMode(QFileDialog::AcceptOpen);
-    m_openDialog->setFileMode(QFileDialog::ExistingFile);
-    m_openDialog->setNameFilter(tr("GeoTIFF (*.tiff *.tif *.gtif)"));
-    // Open file action
-    QAction *openAction = new QAction(tr("&Open"));
-    connect(openAction, &QAction::triggered, this, [&](){
-        if ( m_openDialog->exec() )
-        {
-            QStringList fileList = m_openDialog->selectedFiles();
-            if ( !fileList.isEmpty() )
-            {
-                fs::path demPath = fileList[0].toStdString();
-                m_demCmap->openDEM(demPath);
-                setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
-                m_demCmap->plotDEM(true);
-            }
-        }
-    });
+//    // Open file QFfileDialog
+//    m_openDialog = new QFileDialog(this);
+//    m_openDialog->setWindowTitle(tr("Open a GeoTiff DEM file"));
+//    m_openDialog->setAcceptMode(QFileDialog::AcceptOpen);
+//    m_openDialog->setFileMode(QFileDialog::ExistingFile);
+//    m_openDialog->setNameFilter(tr("GeoTIFF (*.tiff *.tif *.gtif)"));
+//    // Open file action
+//    QAction *openAction = new QAction(tr("&Open"));
+//    connect(openAction, &QAction::triggered, this, [&](){
+//        if ( m_openDialog->exec() )
+//        {
+//            QStringList fileList = m_openDialog->selectedFiles();
+//            if ( !fileList.isEmpty() )
+//            {
+//                fs::path demPath = fileList[0].toStdString();
+//                m_demCmap->openDEM(demPath);
+//                setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
+//                m_demCmap->plotDEM(true);
+//            }
+//        }
+//    });
     // Close application action
     QAction *closeAction = new QAction(tr("&Close"));
     connect(closeAction, &QAction::triggered, this, [&](){ this->close(); });
     // File menu
     QMenu *fileMenu = new QMenu(tr("&File"));
-    fileMenu->addAction(openAction);
+//    fileMenu->addAction(openAction);
     fileMenu->addSeparator();
     fileMenu->addAction(closeAction);
     // MenuBar
@@ -129,6 +130,25 @@ void GeoTiffDEMViewerWindow::createStatusBar()
 void GeoTiffDEMViewerWindow::createToolBar()
 {
     QToolBar *toolBar = new QToolBar();
+    // Left Panel
+    QAction *infosAction = new QAction(tr("&Infos"));
+    toolBar->addAction(infosAction);
+    toolBar->addSeparator();
+    // Open file action
+    QAction *openAction = new QAction(tr("&Open"));
+    connect(openAction, &QAction::triggered, this, [&](){
+        QString fileName = QFileDialog::getOpenFileName(this, tr("Open a GeoTiff DEM file"),
+                                                        "",
+                                                        tr("GeoTIFF (*.tiff *.tif *.gtif)"));
+        if ( fileName != "" )
+        {
+            fs::path demPath = fileName.toStdString();
+            m_demCmap->openDEM(demPath);
+            setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
+            m_demCmap->plotDEM(true);
+        }
+    });
+    toolBar->addAction(openAction);
     //
     QAction *resetZoomAction = new QAction("home");
     connect(resetZoomAction, &QAction::triggered, this, [&](){m_demCmap->resetZoom();});
@@ -147,7 +167,15 @@ void GeoTiffDEMViewerWindow::createToolBar()
 
 void GeoTiffDEMViewerWindow::createCentralWidget()
 {
-    setCentralWidget(m_demCmap);
+    QGridLayout *layout = new QGridLayout();
+    QWidget *leftWidget = new QWidget();
+    layout->addWidget(leftWidget, 0, 0);
+    layout->addWidget(m_demCmap, 0, 1);
+    layout->setColumnStretch(0, 1);
+    layout->setColumnStretch(1, 3);
+    QWidget* centralWidget = new QWidget();
+    centralWidget->setLayout(layout);
+    setCentralWidget(centralWidget);
 }
 
 void GeoTiffDEMViewerWindow::closeEvent(QCloseEvent *event)

@@ -20,7 +20,7 @@ private:
     //
     QDEMColorMap *m_demCmap;
     // Menubar QWidgets
-    QFileDialog *m_openDialog;
+//    QFileDialog *m_openDialog;
     // Status bar QWidgets
     QLabel *m_statusLabel;
     QLabel *m_coordLabel;
