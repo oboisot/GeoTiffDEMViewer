@@ -7,22 +7,35 @@ QDEMColorMap::QDEMColorMap()
     : m_dem(new QGeoTiffDEM()),
       m_gradient(QCPColorGradient::gpGrayscale),
       m_interp(GeoTiffDEMinterp::Nearest),
-      m_zoomLevel(0), m_zoomLevelMax(10), m_zoomInterpThreshold(6),
-      m_isPlotting(false), m_selectRectEnabled(false)
+      m_zoomLevel(0), m_zoomLevelMax(10), m_zoomInterpThreshold(8),
+      m_zoomFactor(1.0), m_betaIn(0.0), m_betaOut(0.0),
+      m_isPlotting(false), m_isMousePressedInCmapBBox(false), m_selectRectEnabled(false)
 {
     //
     m_gradient.setNanHandling(QCPColorGradient::nhTransparent);
 
     // QCustomPlot
     setInteraction(QCP::iRangeDrag);
+    setInteraction(QCP::iRangeZoom);
     axisRect()->setupFullAxesBox(true);
 
     // QCPColorMap
     m_cmap = new QCPColorMap(xAxis, yAxis);
-    m_cmap->setGradient(m_gradient);
     m_cmap->setInterpolate(false);
-    //
+        // Signals and slots
     connect(m_dem, SIGNAL(progressChanged(const double&)), this, SLOT(onProgressChanged(const double&)));
+    // QCPColorScale
+    m_cscale = new QCPColorScale(this);
+    this->plotLayout()->addElement(0, 1, m_cscale); // add it to the right of the main axis rect
+    m_cscale->setType(QCPAxis::atRight); // scale shall be vertical bar with tick/axis labels right (actually atRight is already the default)
+//    m_cscale->setMargins(QMargins(0, 0, 0, 0));
+    m_cmap->setColorScale(m_cscale); // associate the color map with the color scale
+    m_cmap->setGradient(m_gradient); // ColorMap gradient
+        // make sure the axis rect and color scale synchronize their bottom and top margins (so they line up):
+    QCPMarginGroup *marginGroup = new QCPMarginGroup(this);
+    this->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
+    m_cscale->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
+
 }
 // Destructor
 QDEMColorMap::~QDEMColorMap()
@@ -60,19 +73,34 @@ void QDEMColorMap::openDEM(const fs::path &demPath)
             xAxis->setLabel("Pixels");
             yAxis->setLabel("Pixels");
         }
+        // give the colorscale some label
+        m_cscale->axis()->setLabel("Altitude [m]");
+        // Reset interp method
+        m_interp = GeoTiffDEMinterp::Nearest;
+        // Reset zoom level
+        m_zoomLevel = 0;
         emit zoomChanged(m_zoomLevel);
+
+        // ZoomFactor
+        // Here, at zoomLevelMax, a square of 100x100 pixels would be
+        // (approximately in the case of non square data pixels) at
+        // data full resolution.
+        double Xsize = m_dem->getRasterXSize() / 100.0,
+               Ysize = m_dem->getRasterYSize() / 100.0,
+               invn = 1.0 / m_zoomLevelMax;
+        m_zoomFactor = 0.5 * (std::pow(Xsize, invn) + std::pow(Ysize, invn));
+        m_betaIn = 0.5 * (1.0 - 1.0 / m_zoomFactor);
+        m_betaOut = 0.5 * (1.0 - m_zoomFactor);
+        std::cout << "m_zoomFactor = " << m_zoomFactor << std::endl;
     }
 }
 
 void QDEMColorMap::plotDEM(bool axesEquals)
 {
-//    m_isPlotting = true;
-//    setCursor(Qt::WaitCursor); // Ensure to have WaitCursor on QCustomPlot
-//    emit plotDEMChanged(true, Qt::WaitCursor);
-    QFuture<void> future = QtConcurrent::run([this,axesEquals](){
+    QFuture<void> future = QtConcurrent::run([=](){ // send plot operation to another thread
         m_isPlotting = true;
         setCursor(Qt::WaitCursor); // Ensure to have WaitCursor on QCustomPlot
-        emit cursorDEMChanged(Qt::WaitCursor);
+        emit plotChanged(true);
         m_dem->interpFromXYBBoxToQCPColorMapData(m_X0, m_Y1, m_X1, m_Y0,
                                                  m_bufXsize, m_bufYsize,
                                                  m_zbufZmin, m_zbufZmax,
@@ -80,18 +108,52 @@ void QDEMColorMap::plotDEM(bool axesEquals)
         m_cmap->data()->setRange(QCPRange(m_X0, m_X1), QCPRange(m_Y0, m_Y1));
         m_cmap->setDataRange(QCPRange(m_zbufZmin, m_zbufZmax));
         m_cmap->rescaleDataRange(true);
-        if ( axesEquals )
-            replotAxesEquals();
-        else
-            replot();
-        emit cursorDEMChanged(Qt::ArrowCursor);
+        replotDEM(axesEquals);
         if ( m_selectRectEnabled )
             setCursor(Qt::CrossCursor);
         else
             setCursor(Qt::ArrowCursor);
+        emit plotChanged(false);
         m_isPlotting = false;
     });
-//    future.waitForFinished();
+}
+
+void QDEMColorMap::setBackgroundColor(const QColor &color)
+{
+    setBackground(QBrush(color));
+}
+
+void QDEMColorMap::setAxisRectBackgroundColor(const QColor &color)
+{
+    axisRect()->setBackground(QBrush(color));
+}
+
+void QDEMColorMap::setAxesColor(const QColor &color)
+{
+    // X axes
+    xAxis->setLabelColor(color);
+    xAxis->setTickLabelColor(color);
+    xAxis->setTickPen(QPen(color));
+    xAxis->setSubTickPen(QPen(color));
+    xAxis->setBasePen(QPen(color));
+    xAxis2->setTickPen(QPen(color));
+    xAxis2->setSubTickPen(QPen(color));
+    xAxis2->setBasePen(QPen(color));
+        // Y axes
+    yAxis->setLabelColor(color);
+    yAxis->setTickLabelColor(color);
+    yAxis->setTickPen(QPen(color));
+    yAxis->setSubTickPen(QPen(color));
+    yAxis->setBasePen(QPen(color));
+    yAxis2->setTickPen(QPen(color));
+    yAxis2->setSubTickPen(QPen(color));
+    yAxis2->setBasePen(QPen(color));
+    // ColorScale color
+    m_cscale->axis()->setTickLabelColor(color);
+    m_cscale->axis()->setLabelColor(color);
+    m_cscale->axis()->setTickPen(QPen(color));
+    m_cscale->axis()->setSubTickPen(QPen(color));
+    m_cscale->axis()->setBasePen(QPen(color));
 }
 
 //#################################//
@@ -106,49 +168,70 @@ void QDEMColorMap::resetZoom()
         m_X1 = m_Xmax;
         m_Y1 = m_Ymax;
         plotDEM(true);
-        m_zoomLevel = 0;
         m_interp = GeoTiffDEMinterp::Nearest;
+        m_zoomLevel = 0;
         emit zoomChanged(m_zoomLevel);
     }
 }
 
-void QDEMColorMap::zoomIn()
+void QDEMColorMap::zoomIn(const int &zoomStep, const double &tX, const double &tY)
 {
     if ( m_dem->isOpened() && !m_isPlotting )
     {
-        m_zoomLevel += 1;
+        m_zoomLevel += zoomStep;
         // Get cmap natural bouding box
         double X0, Y1, X1, Y0;
-        getCmapNaturalBoundingBox(X0, Y1, X1, Y0);
-        double dX = 0.25 * (X1 - X0),
-               dY = 0.25 * (Y1 - Y0);
+        getCmapBBox(X0, Y1, X1, Y0);
+        double zf, tf, dX, dY;
         if ( m_zoomLevel <= m_zoomLevelMax )
         {
-            if ( m_zoomLevel > m_zoomInterpThreshold - 1 )
+            if ( m_zoomLevel >= m_zoomInterpThreshold )
                 m_interp = GeoTiffDEMinterp::Linear;
-            m_X0 = X0 + dX;
-            m_Y1 = Y1 - dY;
-            m_X1 = X1 - dX;
-            m_Y0 = Y0 + dY;
-            // Important !! => allows to zoom on the QCPColorMap center point
-            xAxis->setRange(m_X0, m_X1);
+            computeZoomInFactors(zoomStep, zf, tf);
+            dX = zf * (X1 - X0);
+            dY = zf * (Y1 - Y0);
+            m_X0 = X0 + dX + tf * tX;
+            m_Y1 = Y1 - dY + tf * tY;
+            m_X1 = X1 - dX + tf * tX;
+            m_Y0 = Y0 + dY + tf * tY;
+            xAxis->setRange(m_X0, m_X1); // Important !! => allows to zoom on the QCPColorMap center point
             yAxis->setRange(m_Y0, m_Y1);
-            if ( checkDEMPlotBBox() ) plotDEM(false);
+            if ( needPlotFromBBox() ) plotDEM(false);
+            emit zoomChanged(m_zoomLevel);
         }
-        else // We stop zoom min to m_zoomLevelMax
+        else // We stop zoom max to m_zoomLevelMax
+        {
+            int zstep = m_zoomLevelMax + zoomStep - m_zoomLevel; // Always equals 0 when we are at m_zoomLevelMax
+                                                                 // Otherwise, compute the needed zstep (lower than zoomStep)
+                                                                 // to reach m_zoomLevelMax
+            if ( zstep > 0 )
+            {
+                m_interp = GeoTiffDEMinterp::Linear;
+                computeZoomInFactors(zstep, zf, tf);
+                dX = zf * (X1 - X0);
+                dY = zf * (Y1 - Y0);
+                m_X0 = X0 + dX + tf * tX;
+                m_Y1 = Y1 - dY + tf * tY;
+                m_X1 = X1 - dX + tf * tX;
+                m_Y0 = Y0 + dY + tf * tY;
+                xAxis->setRange(m_X0, m_X1); // Important !! => allows to zoom on the QCPColorMap center point
+                yAxis->setRange(m_Y0, m_Y1);
+                if ( needPlotFromBBox() ) plotDEM(false);
+            }
             m_zoomLevel = m_zoomLevelMax;
-        emit zoomChanged(m_zoomLevel);
+            emit zoomChanged(m_zoomLevel);
+        }
     }
 }
 
-void QDEMColorMap::zoomOut()
+void QDEMColorMap::zoomOut(const int &zoomStep, const double &tX, const double &tY)
 {
     if ( m_dem->isOpened() && !m_isPlotting )
     {
-        m_zoomLevel -= 1;
+        m_zoomLevel -= zoomStep;
         // Get cmap natural bouding box
         double X0, Y1, X1, Y0;
-        getCmapNaturalBoundingBox(X0, Y1, X1, Y0);
+        getCmapBBox(X0, Y1, X1, Y0);
         double dX = 0.5 * (X1 - X0),
                dY = 0.5 * (Y1 - Y0);
         if ( m_zoomLevel < m_zoomInterpThreshold )
@@ -158,11 +241,10 @@ void QDEMColorMap::zoomOut()
             m_X0 = X0 - dX;
             m_Y1 = Y1 + dY;
             m_X1 = X1 + dX;
-            m_Y0 = Y0 - dY;
-            // Important !! => allows to zoom on the QCPColorMap center point
-            xAxis->setRange(m_X0, m_X1);
+            m_Y0 = Y0 - dY;            
+            xAxis->setRange(m_X0, m_X1); // Important !! => allows to zoom on the QCPColorMap center point
             yAxis->setRange(m_Y0, m_Y1);
-            if ( checkDEMPlotBBox() ) plotDEM(false);
+            if ( needPlotFromBBox() ) plotDEM(false);
         }
         else if ( m_zoomLevel == 0 ) // We plot all DEM directly
         {
@@ -170,8 +252,7 @@ void QDEMColorMap::zoomOut()
             m_Y0 = m_Ymin;
             m_X1 = m_Xmax;
             m_Y1 = m_Ymax;
-            // Important !! => allows to zoom on the QCPColorMap center point
-            xAxis->setRange(X0 - dX, X1 + dX);
+            xAxis->setRange(X0 - dX, X1 + dX); // Important !! => allows to zoom on the QCPColorMap center point
             yAxis->setRange(Y0 - dY, Y1 + dY);
             plotDEM(false);
         }
@@ -184,21 +265,24 @@ void QDEMColorMap::zoomOut()
 //#############################//
 //##### Private functions #####//
 //#############################//
-void QDEMColorMap::replotAxesEquals()
+void QDEMColorMap::replotDEM(bool axesEquals)
 {
-    rescaleAxes();
-    double X0, Y1, X1, Y0, dX, dY;
-    getCmapNaturalBoundingBox(X0, Y1, X1, Y0);
-    dX = (X1 - X0) / m_bufXsize; // Handles natural bounds and window size.
-    dY = (Y1 - Y0) / m_bufYsize;
-    if ( dY > dX )
-        xAxis->setScaleRatio(this->yAxis, 1.0);
-    else
-        yAxis->setScaleRatio(this->xAxis, 1.0);
-    replot();
+    if ( axesEquals )
+    {
+        rescaleAxes();
+        double X0, Y1, X1, Y0, dX, dY;
+        getCmapBBox(X0, Y1, X1, Y0);
+        dX = (X1 - X0) / m_bufXsize; // Handles natural bounds and window size.
+        dY = (Y1 - Y0) / m_bufYsize;
+        if ( dY > dX )
+            xAxis->setScaleRatio(this->yAxis, 1.0);
+        else
+            yAxis->setScaleRatio(this->xAxis, 1.0);
+    }
+    replot(QCustomPlot::rpQueuedRefresh);
 }
 
-void QDEMColorMap::getCmapNaturalBoundingBox(double &X0, double &Y1, double &X1, double &Y0) // Upper-left, lower-right corners
+void QDEMColorMap::getCmapBBox(double &X0, double &Y1, double &X1, double &Y0) // Upper-left, lower-right corners
 {
     X0 = xAxis->range().lower;
     X1 = xAxis->range().upper;
@@ -206,7 +290,7 @@ void QDEMColorMap::getCmapNaturalBoundingBox(double &X0, double &Y1, double &X1,
     Y0 = yAxis->range().lower;
 }
 
-bool QDEMColorMap::checkDEMPlotBBox()
+bool QDEMColorMap::needPlotFromBBox()
 {
     if ( m_X0 < m_Xmin ) m_X0 = m_Xmin;
     else if ( m_X0 >= m_Xmax) return false;
@@ -217,6 +301,50 @@ bool QDEMColorMap::checkDEMPlotBBox()
     if ( m_Y1 > m_Ymax ) m_Y1 = m_Ymax;
     else if ( m_Y1 <= m_Ymin) return false;
     return true;
+}
+
+bool QDEMColorMap::isMouseEventInCMapBBox(QPointF position)
+{
+    double X0, Y1, X1, Y0;
+    getCmapBBox(X0, Y1, X1, Y0);
+    double X = xAxis->pixelToCoord(position.x()),
+           Y = yAxis->pixelToCoord(position.y());
+    if ( X >= X0 && X <= X1 && Y >= Y0 && Y <= Y1 )
+        return true;
+    else
+        return false;
+}
+
+bool QDEMColorMap::isMouseEventInCScaleRect(QPoint pos)
+{
+    int posx = pos.x(), posy = pos.y();
+    int left = m_cscale->rect().left(),
+        right = m_cscale->rect().right(),
+        top = m_cscale->rect().top(),
+        bottom = m_cscale->rect().bottom();
+//    std::cout << "CScaleRect (left, right, top, bottom): (" << left << ", " << right << ", " << top << ", " << bottom << ")" << std::endl;
+    if ( posx >= left && posx <= right && posy >= top && posy <= bottom )
+        return true;
+    else
+        return false;
+}
+
+void QDEMColorMap::computeZoomInFactors(const int &zoomStep, double &zf, double &tf)
+{
+    zf = 0.0; // Zoom range factor
+    for (int i = 0 ; i < zoomStep ; ++i)
+        zf = 1.0 + zf * (1.0 - 2.0 * m_betaIn);
+    zf *= m_betaIn;
+    tf = 2.0 * zf; // Translation scale factor
+}
+
+void QDEMColorMap::computeZoomOutFactors(const int &zoomStep, double &zf, double &tf)
+{
+    zf = 0.0; // Zoom range factor
+    for (int i = 0 ; i < zoomStep ; ++i)
+        zf = 1.0 + zf * (1.0 - 2.0 * m_betaOut);
+    zf *= m_betaOut;
+    tf = 2.0 * zf; // Translation scale factor
 }
 
 ///////////
@@ -233,32 +361,46 @@ void QDEMColorMap::onProgressChanged(const double &progress)
 void QDEMColorMap::resizeEvent(QResizeEvent *event)
 {
     QCustomPlot::resizeEvent(event);
-    if ( m_dem->isOpened() )
+    // Update of buffer size relative to cmap rect
+    QSize size = this->axisRect()->size();
+    m_bufXsize = size.width();
+    m_bufYsize = size.height();
+    if ( !m_isPlotting )
     {
-        // Update of buffer size relative to cmap rect
-        QSize size = this->axisRect()->size();
-        m_bufXsize = size.width();
-        m_bufYsize = size.height();
-        replotAxesEquals();
+        if ( m_dem->isOpened() )
+        {
+            replotDEM(true);
+        }
     }
 }
 
 void QDEMColorMap::mousePressEvent(QMouseEvent *event)
 {
-    std::cout << m_isPlotting << std::endl;
     if ( !m_isPlotting )
     {
         if ( m_dem->isOpened() )
         {
             if ( event->button() == Qt::LeftButton )
             {
-                setCursor(Qt::ClosedHandCursor);
-                m_mousePressPos = event->pos();
+                if ( isMouseEventInCMapBBox(event->position()) )
+                {
+                    setCursor(Qt::ClosedHandCursor);
+                    m_isMousePressedInCmapBBox = true;
+                    m_mousePressPos = event->pos();
+                    QCustomPlot::mousePressEvent(event);
+                }
+                else if ( isMouseEventInCScaleRect(event->pos()) )
+                {
+                    setCursor(Qt::ClosedHandCursor);
+                    m_isMousePressedInCmapBBox = false;
+                    QCustomPlot::mousePressEvent(event);
+                }
+                else
+                    event->ignore();
             }
         }
         else
             emit statusChanged("You must open a DEM.", QDEMStatusColor::Error);
-        QCustomPlot::mousePressEvent(event);
     }
     else
         event->ignore();
@@ -275,11 +417,12 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
             {
                 if ( event->button() == Qt::LeftButton )
                 {
-                    if ( event->pos() != m_mousePressPos )
+                    if ( m_isMousePressedInCmapBBox && event->pos() != m_mousePressPos )
                     {
                         // Get cmap natural bouding box
-                        getCmapNaturalBoundingBox(m_X0, m_Y1, m_X1, m_Y0);
-                        if ( checkDEMPlotBBox() ) plotDEM(false);
+                        getCmapBBox(m_X0, m_Y1, m_X1, m_Y0);
+                        if ( needPlotFromBBox() ) plotDEM(false);
+                        m_isMousePressedInCmapBBox = false;
                     }
                 }
             }
@@ -292,23 +435,82 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
         event->ignore();
 }
 
+void QDEMColorMap::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if ( !m_isPlotting )
+    {
+        if ( m_dem->isOpened() )
+        {
+            if ( event->button() == Qt::LeftButton )
+            {
+                if ( isMouseEventInCMapBBox(event->position()) )
+                {
+                    double tX = xAxis->pixelToCoord(event->position().x()) - xAxis->range().center(),
+                           tY = yAxis->pixelToCoord(event->position().y()) - yAxis->range().center();
+                    zoomIn(2, tX, tY);
+                    QCustomPlot::mouseDoubleClickEvent(event);
+                }
+                else
+                    event->ignore();
+            }
+            if ( event->button() == Qt::RightButton )
+            {
+                if ( isMouseEventInCMapBBox(event->position()) )
+                {
+                    QCustomPlot::mouseDoubleClickEvent(event);
+                }
+                else
+                    event->ignore();
+            }
+            else
+                event->ignore();
+        }
+        else
+            emit statusChanged("You must open a DEM.", QDEMStatusColor::Error);
+    }
+    else
+        event->ignore();
+}
+
 void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
 {
-    if ( m_dem->isOpened() )
+    if ( !m_isPlotting )
     {
-        // Get cmap natural bouding box
-        double X0, Y1, X1, Y0;
-        getCmapNaturalBoundingBox(X0, Y1, X1, Y0);
-        // Get mouse position in natural coordinates
-        double X, Y;
-        m_cmap->pixelsToCoords(event->pos().x(), event->pos().y(), X, Y);
-        if ( X >= X0 && X <= X1 && Y <= Y1 && Y >= Y0 ) // cursor is in the cmap rect
+        if ( m_dem->isOpened() )
         {
-            QString value;
-            double Z = m_cmap->data()->data(X, Y);
-            if ( m_cmap->data()->keyRange().contains(X) && m_cmap->data()->valueRange().contains(Y) ) // cursor is in the data rect
+            // Get cmap natural bouding box
+            double X0, Y1, X1, Y0;
+            getCmapBBox(X0, Y1, X1, Y0);
+            // Get mouse position in natural coordinates
+            double X, Y;
+            m_cmap->pixelsToCoords(event->position().x(), event->position().y(), X, Y);
+            if ( X >= X0 && X <= X1 && Y <= Y1 && Y >= Y0 ) // cursor is in the cmap rect
             {
-                if ( Z != Z ) // nodata case
+                QString value;
+                double Z = m_cmap->data()->data(X, Y);
+                if ( m_cmap->data()->keyRange().contains(X) && m_cmap->data()->valueRange().contains(Y) ) // cursor is in the data rect
+                {
+                    if ( Z != Z ) // nodata case
+                    {
+                        if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
+                            value = QString("lon: %1°, lat: %2°, alt: -").arg(QString::number(X, 'f', 6), QString::number(Y, 'f', 6));
+                        else if ( m_axes == GeoTiffDEMAxesUnit::NorthEast )
+                            value = QString("X: %1m, Y: %2m, alt: -").arg(QString::number(X, 'f', 3), QString::number(X, 'f', 3));
+                        else
+                            value = QString("X: %1px, Y: %2px, alt: -").arg(QString::number(X, 'f', 3), QString::number(X, 'f', 3));
+                    }
+                    else
+                    {
+                        QString Zstr = QString::number(Z, 'f', 3);
+                        if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
+                            value = QString("lon: %1°, lat: %2°, alt: %3m").arg(QString::number(X, 'f', 6), QString::number(Y, 'f', 6), Zstr);
+                        else if ( m_axes == GeoTiffDEMAxesUnit::NorthEast )
+                            value = QString("X: %1m, Y: %2m, alt: %3m").arg(QString::number(X, 'f', 3), QString::number(Y, 'f', 3), Zstr);
+                        else
+                            value = QString("X: %1px, Y: %2px, alt: %3m").arg(QString::number(X, 'f', 3), QString::number(Y, 'f', 3), Zstr);
+                    }
+                }
+                else // in the cmap rect but not in the data rect -> like 'nodata'
                 {
                     if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
                         value = QString("lon: %1°, lat: %2°, alt: -").arg(QString::number(X, 'f', 6), QString::number(Y, 'f', 6));
@@ -317,79 +519,14 @@ void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
                     else
                         value = QString("X: %1px, Y: %2px, alt: -").arg(QString::number(X, 'f', 3), QString::number(X, 'f', 3));
                 }
-                else
-                {
-                    QString Zstr = QString::number(Z, 'f', 3);
-                    if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
-                        value = QString("lon: %1°, lat: %2°, alt: %3m").arg(QString::number(X, 'f', 6), QString::number(Y, 'f', 6), Zstr);
-                    else if ( m_axes == GeoTiffDEMAxesUnit::NorthEast )
-                        value = QString("X: %1m, Y: %2m, alt: %3m").arg(QString::number(X, 'f', 3), QString::number(Y, 'f', 3), Zstr);
-                    else
-                        value = QString("X: %1px, Y: %2px, alt: %3m").arg(QString::number(X, 'f', 3), QString::number(Y, 'f', 3), Zstr);
-                }
+                emit cmapCursorPosChanged(value);
             }
-            else // in the cmap rect but not in the data rect -> like 'nodata'
-            {
-                if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
-                    value = QString("lon: %1°, lat: %2°, alt: -").arg(QString::number(X, 'f', 6), QString::number(Y, 'f', 6));
-                else if ( m_axes == GeoTiffDEMAxesUnit::NorthEast )
-                    value = QString("X: %1m, Y: %2m, alt: -").arg(QString::number(X, 'f', 3), QString::number(X, 'f', 3));
-                else
-                    value = QString("X: %1px, Y: %2px, alt: -").arg(QString::number(X, 'f', 3), QString::number(X, 'f', 3));
-            }
-            emit cmapCursorPosChanged(value);
         }
+        else
+            emit statusChanged("You must open a DEM.", QDEMStatusColor::Error);
+        QCustomPlot::mouseMoveEvent(event);
     }
     else
-        emit statusChanged("You must open a DEM.", QDEMStatusColor::Error);
-    QCustomPlot::mouseMoveEvent(event);
-}
-
-void QDEMColorMap::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    if ( m_dem->isOpened() )
-    {
-        if ( event->button() == Qt::LeftButton )
-        {
-            m_zoomLevel += 2;
-            // Get cmap natural bouding box
-            double X0, Y1, X1, Y0;
-            getCmapNaturalBoundingBox(X0, Y1, X1, Y0);
-            double dX = 0.375 * (X1 - X0), // 0.375 = 3/8 = 3/(2*4)
-                   dY = 0.375 * (Y1 - Y0),
-                   f = 0.75; // = 2*0.375 (scale factor to be applied on X/Y translation to keep screen clicked position on the same place)
-            if ( m_zoomLevel == m_zoomLevelMax + 1) // Case where previous zoom equals maxZoom - 1
-            {
-                m_zoomLevel = m_zoomLevelMax;
-                dX = 0.25 * (X1 - X0);
-                dY = 0.25 * (Y1 - Y0);
-                f = 0.5;
-            }
-            if ( m_zoomLevel <= m_zoomLevelMax )
-            {
-                if ( m_zoomLevel > m_zoomInterpThreshold - 1 )
-                    m_interp = GeoTiffDEMinterp::Linear;
-                double tX = f * (xAxis->pixelToCoord(event->pos().x()) - xAxis->range().center()), // X translation: Mouse Xposition - Cmap Xcenter (in natural coordinates)
-                       tY = f * (yAxis->pixelToCoord(event->pos().y()) - yAxis->range().center()); // Y translation: Mouse Yposition - Cmap Ycenter (in natural coordinates)
-                m_X0 = X0 + dX + tX;
-                m_Y1 = Y1 - dY + tY;
-                m_X1 = X1 - dX + tX;
-                m_Y0 = Y0 + dY + tY;
-                xAxis->setRange(m_X0, m_X1);
-                yAxis->setRange(m_Y0, m_Y1);
-                if ( checkDEMPlotBBox() ) plotDEM(false);
-            }
-            else // We stop zoom max to m_zoomLevelMax
-                m_zoomLevel = m_zoomLevelMax;
-            emit zoomChanged(m_zoomLevel);
-        }
-        if ( event->button() == Qt::RightButton )
-        {
-            emit zoomChanged(m_zoomLevel);
-        }
-    }
-    else
-        emit statusChanged("You must open a DEM.", QDEMStatusColor::Error);
-    QCustomPlot::mouseDoubleClickEvent(event);
+        event->ignore();
 }
 

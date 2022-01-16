@@ -37,7 +37,18 @@ void GeoTiffDEMViewerWindow::createQDEMColorMap()
     // Create QDEMColorMap
     GDALAllRegister(); // Initialize GDAL drivers
     m_demCmap = new QDEMColorMap();
-    connect(m_demCmap, &QDEMColorMap::cursorDEMChanged, this, [=](const QCursor &cursor){ setCursor(cursor); });
+    // QCustomPlot colors and style
+    m_demCmap->setBackgroundColor(QColor(25, 25, 25));
+    m_demCmap->setAxisRectBackgroundColor(QColor(80, 80, 80));
+    m_demCmap->setAxesColor(QColor(169, 183, 198));
+
+    // Signals and slots
+    connect(m_demCmap, &QDEMColorMap::plotChanged, this, [=](bool isPlotting){
+        if ( isPlotting )
+            setCursor(Qt::WaitCursor);
+        else
+            setCursor(Qt::ArrowCursor);
+    });
 }
 
 void GeoTiffDEMViewerWindow::createMenubar()
@@ -121,7 +132,7 @@ void GeoTiffDEMViewerWindow::createStatusBar()
     m_progressBar = new QProgressBar();
     m_progressBar->setRange(0, 100);
     connect(m_demCmap, &QDEMColorMap::progressChanged, this,
-        [&](const double &progress) { m_progressBar->setValue(static_cast<int>(progress * 100.0)); }
+        [=](const double &progress) { m_progressBar->setValue(static_cast<int>(progress * 100.0)); }
     );
     //
     statusBar()->addPermanentWidget(m_progressBar, 1);
@@ -136,7 +147,7 @@ void GeoTiffDEMViewerWindow::createToolBar()
     toolBar->addSeparator();
     // Open file action
     QAction *openAction = new QAction(tr("&Open"));
-    connect(openAction, &QAction::triggered, this, [&](){
+    connect(openAction, &QAction::triggered, this, [=](){
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open a GeoTiff DEM file"),
                                                         "",
                                                         tr("GeoTIFF (*.tiff *.tif *.gtif)"));
@@ -151,15 +162,15 @@ void GeoTiffDEMViewerWindow::createToolBar()
     toolBar->addAction(openAction);
     //
     QAction *resetZoomAction = new QAction("home");
-    connect(resetZoomAction, &QAction::triggered, this, [&](){m_demCmap->resetZoom();});
+    connect(resetZoomAction, &QAction::triggered, this, [=](){m_demCmap->resetZoom();});
     toolBar->addAction(resetZoomAction);
     //
     QAction *zoomPlusAction = new QAction("zoom+");
-    connect(zoomPlusAction, &QAction::triggered, this, [&](){m_demCmap->zoomIn();});
+    connect(zoomPlusAction, &QAction::triggered, this, [=](){m_demCmap->zoomIn();});
     toolBar->addAction(zoomPlusAction);
     //
     QAction *zoomMinusAction = new QAction("zoom-");
-    connect(zoomMinusAction, &QAction::triggered, this, [&](){m_demCmap->zoomOut();});
+    connect(zoomMinusAction, &QAction::triggered, this, [=](){m_demCmap->zoomOut();});
     toolBar->addAction(zoomMinusAction);
     //
     addToolBar(Qt::TopToolBarArea, toolBar);
@@ -167,15 +178,17 @@ void GeoTiffDEMViewerWindow::createToolBar()
 
 void GeoTiffDEMViewerWindow::createCentralWidget()
 {
-    QGridLayout *layout = new QGridLayout();
-    QWidget *leftWidget = new QWidget();
-    layout->addWidget(leftWidget, 0, 0);
-    layout->addWidget(m_demCmap, 0, 1);
-    layout->setColumnStretch(0, 1);
-    layout->setColumnStretch(1, 3);
-    QWidget* centralWidget = new QWidget();
-    centralWidget->setLayout(layout);
-    setCentralWidget(centralWidget);
+//    QGridLayout *layout = new QGridLayout();
+//    layout->setContentsMargins(0, 0, 0, 0);
+//    QWidget *leftWidget = new QWidget();
+//    layout->addWidget(leftWidget, 0, 0);
+//    layout->addWidget(m_demCmap, 0, 1);
+//    layout->setColumnStretch(0, 1);
+//    layout->setColumnStretch(1, 3);
+//    QWidget* centralWidget = new QWidget();
+//    centralWidget->setLayout(layout);
+//    setCentralWidget(centralWidget);
+    setCentralWidget(m_demCmap);
 }
 
 void GeoTiffDEMViewerWindow::closeEvent(QCloseEvent *event)

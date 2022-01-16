@@ -6,7 +6,7 @@ Last updated: 01/10/2021, 15:49.
 Available at: https://github.com/GTRONICK/QSS/blob/master/AMOLED.qss
 */
 QMainWindow {
-	background-color:#000000;
+	background-color:#191919;
 }
 
 QToolBar {
@@ -66,6 +66,7 @@ QPushButton::default{
 	color: #a9b7c6;
 	background-color: #191919;
 }
+
 QPushButton:hover{
 	border-style: inset;
 	border-top-color: transparent;
@@ -122,8 +123,7 @@ QToolButton:pressed{
 	background-color: #191919;
 }
 
-
-QTextEdit {
+/* QTextEdit {
 	background-color:#000000;
 	color: #a9b7c6;
 }
@@ -531,4 +531,4 @@ QScrollBar::down-arrow:vertical {
 }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
   	background: none;
-}
+} */
