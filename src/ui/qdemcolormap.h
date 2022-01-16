@@ -133,6 +133,7 @@ private:
      * \return
      */
     void computeZoomInFactors(const int &zoomStep, double &zf, double &tf);
+    void computeZoomOutFactors(const int &zoomStep, double &zf, double &tf);
     //
 };
 
