@@ -15,9 +15,8 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     //
     setMouseTracking(true);
     setGeometry(600, 180, 720, 720);
-    setMinimumSize(300, 300);
+    setMinimumSize(600, 600);
     setWindowTitle("GeoTiffDEM Viewer");
-    setAttribute(Qt::WA_Disabled, true);
     //
     QFile file(":/qss/dark.qss");
     file.open(QFile::Text |QFile::ReadOnly);
@@ -91,29 +90,30 @@ void GeoTiffDEMViewerWindow::createMenubar()
 void GeoTiffDEMViewerWindow::createStatusBar()
 {
     //
+    m_statusLabelTimer = new QTimer(this);
     m_statusLabel = new QLabel(" ");
     m_statusLabel->setAlignment(Qt::AlignLeft|Qt::AlignVCenter);
+    statusBar()->addPermanentWidget(m_statusLabel, 2);
     connect(m_demCmap, &QDEMColorMap::statusChanged, this,
-            [=](const QString &status, QDEMStatusColor color)
+            [=](const QString &status, const QDEMStatusColor &color, const int &msec)
     {
+        m_statusLabelTimer->stop();
         m_statusLabel->setText(status);
         switch (color)
         {
         case Normal:
-            m_statusLabel->setStyleSheet("QLabel { color : black; }");
-            break;
+            m_statusLabel->setStyleSheet("QLabel { color : black; }");break;
         case Warning:
-            m_statusLabel->setStyleSheet("QLabel { color : yellow; }");
-            break;
+            m_statusLabel->setStyleSheet("QLabel { color : yellow; }");break;
         case Error:
-            m_statusLabel->setStyleSheet("QLabel { color : red; }");
-            break;
+            m_statusLabel->setStyleSheet("QLabel { color : red; }");break;
         default:
-            m_statusLabel->setStyleSheet("QLabel { color : black; }");
-            break;
+            m_statusLabel->setStyleSheet("QLabel { color : black; }");break;
         }
+        if ( msec > 0 )
+            m_statusLabelTimer->start(msec);
     });
-    statusBar()->addPermanentWidget(m_statusLabel, 2);
+    connect(m_statusLabelTimer, &QTimer::timeout, this, [=](){ m_statusLabel->setText(""); });
     //
     m_coordLabel = new QLabel(" ");
     m_coordLabel->setAlignment(Qt::AlignCenter);
@@ -141,12 +141,11 @@ void GeoTiffDEMViewerWindow::createStatusBar()
 void GeoTiffDEMViewerWindow::createToolBar()
 {
     QToolBar *toolBar = new QToolBar();
-    // Left Panel
-    QAction *infosAction = new QAction(tr("&Infos"));
-    toolBar->addAction(infosAction);
-    toolBar->addSeparator();
     // Open file action
-    QAction *openAction = new QAction(tr("&Open"));
+    QAction *openAction = new QAction(tr("&Open..."));
+    openAction->setShortcuts(QKeySequence::Open);
+    openAction->setToolTip(tr("Open a GeoTiff DEM file (Ctrl+O)"));
+    openAction->setIcon(QIcon(":/qss/dark/icons/svg/document-open.svg"));
     connect(openAction, &QAction::triggered, this, [=](){
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open a GeoTiff DEM file"),
                                                         "",
@@ -160,6 +159,8 @@ void GeoTiffDEMViewerWindow::createToolBar()
         }
     });
     toolBar->addAction(openAction);
+    openAction->setObjectName("openAction");
+    toolBar->addSeparator();
     //
     QAction *resetZoomAction = new QAction("home");
     connect(resetZoomAction, &QAction::triggered, this, [=](){m_demCmap->resetZoom();});

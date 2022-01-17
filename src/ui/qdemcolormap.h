@@ -2,8 +2,10 @@
 #define QDEMCOLORMAP_H
 
 #include <iostream>
+#include <cmath>
 #include <filesystem>
 #include <QtConcurrent>
+#include <QGuiApplication>
 #include "qcustomplot.h"
 #include "src/qgeotiffdem.h"
 
@@ -52,7 +54,7 @@ public:
 
 
 signals:
-    void statusChanged(const QString &status, QDEMStatusColor color);
+    void statusChanged(const QString &status, const QDEMStatusColor &color, const int &msec=0);
     void zoomChanged(const int &zoomLevel);
     void cmapCursorPosChanged(const QString &value);
     void progressChanged(const double &progress);
@@ -67,6 +69,7 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
     virtual void mouseMoveEvent(QMouseEvent *event) override;
+    virtual void wheelEvent(QWheelEvent *event) override;
 
 private:
     // Class initialization parameters
@@ -88,11 +91,13 @@ private:
            m_progress_old, m_progress;
     QPoint m_mousePressPos;
     // Private methods
+    void initBufSizeFromScreenSize();
     void replotDEM(bool axesEquals);
     void getCmapBBox(double &X0, double &Y1, double &X1, double &Y0);
     bool needPlotFromBBox();
     bool isMouseEventInCMapBBox(QPointF position);
-    bool isMouseEventInCScaleRect(QPoint pos);
+    bool isMouseEventInCScaleRect(QPointF position);
+    void computeDEMZoomFactors();
     /*!
      * \brief computeZoomInFactor
      *

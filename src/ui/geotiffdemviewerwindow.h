@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <QMainWindow>
+#include <QTimer>
 #include "qdemcolormap.h"
 
 class GeoTiffDEMViewerWindow : public QMainWindow
@@ -19,13 +20,12 @@ protected:
 private:
     //
     QDEMColorMap *m_demCmap;
-    // Menubar QWidgets
-//    QFileDialog *m_openDialog;
     // Status bar QWidgets
     QLabel *m_statusLabel;
     QLabel *m_coordLabel;
     QLabel *m_zoomLabel;
     QProgressBar *m_progressBar;
+    QTimer *m_statusLabelTimer;
     //
     void createQDEMColorMap();
     void createMenubar();
