@@ -55,7 +55,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC libs/qcustomplot) # QCustomPlo
 ################
 # Ajout du path 'anaconda' pour la recherche de librairie pour CMake
 if (WIN32)
-    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal
+#    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal (MSVCRT)
+    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/ucrt64") # MSYS2 mingw-w64-x86_64-gdal (UCRT)
 else()
     set(GDAL_CUSTOM_PATH "/home/oboisot/anaconda3") # Anaconda3 gdal
 endif()

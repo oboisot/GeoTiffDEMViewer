@@ -85,7 +85,7 @@ void QDEMColorMap::plotDEM(bool axesEquals)
     QFuture<void> future = QtConcurrent::run([=](){ // send plot operation to another thread
         m_isPlotting = true;
         this->setCursor(Qt::WaitCursor); // Ensure to have WaitCursor on QCustomPlot
-        emit this->plotChanged(true);
+        emit this->cursorChanged(Qt::WaitCursor);
         m_dem->interpFromXYBBoxToQCPColorMapData(m_X0, m_Y1, m_X1, m_Y0,
                                                  m_bufXsize, m_bufYsize,
                                                  m_zbufZmin, m_zbufZmax,
@@ -95,10 +95,15 @@ void QDEMColorMap::plotDEM(bool axesEquals)
         m_cmap->rescaleDataRange(true);
         this->replotDEM(axesEquals);
         if ( m_selectRectEnabled )
+        {
             this->setCursor(Qt::CrossCursor);
+            emit this->cursorChanged(Qt::CrossCursor);
+        }
         else
+        {
             this->setCursor(Qt::ArrowCursor);
-        emit this->plotChanged(false);
+            emit this->cursorChanged(Qt::ArrowCursor);
+        }
         m_isPlotting = false;
     });
 }

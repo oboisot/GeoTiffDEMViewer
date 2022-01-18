@@ -58,7 +58,7 @@ signals:
     void zoomChanged(const int &zoomLevel);
     void cmapCursorPosChanged(const QString &value);
     void progressChanged(const double &progress);
-    void plotChanged(bool isPlotting);
+    void cursorChanged(const QCursor &cursor);
 
 private slots:
     void onProgressChanged(const double &progress);

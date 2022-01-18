@@ -1,11 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>qss/dark.qss</file>
-    </qresource>
-    <qresource prefix="/">
+        <file>qss/dark/dark.qss</file>
         <file>qss/dark/icons/svg/document-open.svg</file>
-        <file>qss/dark/icons/svg/document-open-hovered.svg</file>
-        <file>qss/dark/icons/folder-icon.png</file>
     </qresource>
-
 </RCC>

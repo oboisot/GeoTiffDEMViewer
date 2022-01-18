@@ -18,7 +18,7 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     setMinimumSize(600, 600);
     setWindowTitle("GeoTiffDEM Viewer");
     //
-    QFile file(":/qss/dark.qss");
+    QFile file(":/qss/dark/dark.qss");
     file.open(QFile::Text |QFile::ReadOnly);
     QString styleSheet = QString::fromUtf8(file.readAll());
     qApp->setStyleSheet(styleSheet);
@@ -42,12 +42,7 @@ void GeoTiffDEMViewerWindow::createQDEMColorMap()
     m_demCmap->setAxesColor(QColor(169, 183, 198));
 
     // Signals and slots
-    connect(m_demCmap, &QDEMColorMap::plotChanged, this, [=](bool isPlotting){
-        if ( isPlotting )
-            setCursor(Qt::WaitCursor);
-        else
-            setCursor(Qt::ArrowCursor);
-    });
+    connect(m_demCmap, &QDEMColorMap::cursorChanged, this, [=](const QCursor &cursor){ this->setCursor(cursor); });
 }
 
 void GeoTiffDEMViewerWindow::createMenubar()
