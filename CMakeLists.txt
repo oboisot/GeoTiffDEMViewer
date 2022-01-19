@@ -75,12 +75,12 @@ target_link_libraries(${PROJECT_NAME} GDAL::GDAL) # Linkage de la librairie pour
 # Version de Qt pour QCustomPlot
 find_package(Qt6)
 if (Qt6_FOUND)
-    message("-- Found Qt6")
+    message("-- Found Qt6: ${Qt6_DIR}")
     set(QCUSTOMPLOT_QT6 ON)
 else()
     find_package(Qt5 COMPONENTS Core)
     if (Qt5_FOUND)
-        message("-- Found Qt5")
+        message("-- Found Qt5: ${Qt5_DIR}")
         set(QCUSTOMPLOT_QT6 OFF)
     else()
         message(FATAL_ERROR "Qt6 or Qt5 versions are necessary to link QCustomPlot library !")
@@ -120,3 +120,34 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    ${QCUSTOMPLOT_SODIR} ${CMAKE_BINARY_DIR})
 
 
+message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+if (WIN32)
+    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/lib" "/home/oboisot/Qt/6.2.2/gcc_64/lib/")
+else()
+    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/lib" "/home/oboisot/Qt/6.2.2/gcc_64/lib/")
+endif()
+# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
+install(CODE "set(MY_DEPENDENCY_PATHS \"${MY_DEPENDENCY_PATHS}\")")
+
+install(CODE [[
+ file(GET_RUNTIME_DEPENDENCIES
+      EXECUTABLES $<TARGET_FILE:GeoTiffDEMViewer>
+      RESOLVED_DEPENDENCIES_VAR _r_deps
+      UNRESOLVED_DEPENDENCIES_VAR _u_deps
+      CONFLICTING_DEPENDENCIES_PREFIX _c_deps_pref
+      DIRECTORIES ${MY_DEPENDENCY_PATHS}
+ )
+ foreach(_file ${_r_deps})
+     message("Installing file: ${_file}")
+     file(INSTALL
+          DESTINATION "${CMAKE_BINARY_DIR}/lib"
+          TYPE SHARED_LIBRARY
+          FOLLOW_SYMLINK_CHAIN
+          FILES "${_file}"
+     )
+ endforeach()
+ list(LENGTH _u_deps _u_length)
+ if("${_u_length}" GREATER 0)
+   message(WARNING "Unresolved dependencies detected!")
+ endif()
+]])
