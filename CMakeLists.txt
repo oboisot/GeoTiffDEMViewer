@@ -122,9 +122,9 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 if (WIN32)
-    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/bin" "D:\oboisot\Qt\6.2.2\mingw_64\bin")
+    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/bin" "D:/oboisot/Qt/6.2.2/mingw_64/bin")
 else()
-    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/lib" "/home/oboisot/Qt/6.2.2/gcc_64/lib/")
+    set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/lib" "/home/oboisot/Qt/6.2.2/gcc_64/lib")
 endif()
 # Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 install(CODE "set(MY_DEPENDENCY_PATHS \"${MY_DEPENDENCY_PATHS}\")")
@@ -136,6 +136,8 @@ install(CODE [[
       UNRESOLVED_DEPENDENCIES_VAR _u_deps
       CONFLICTING_DEPENDENCIES_PREFIX _c_deps_pref
       DIRECTORIES ${MY_DEPENDENCY_PATHS}
+      PRE_EXCLUDE_REGEXES "api-ms-*"
+      POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
  )
  foreach(_file ${_r_deps})
      message("Installing file: ${_file}")
