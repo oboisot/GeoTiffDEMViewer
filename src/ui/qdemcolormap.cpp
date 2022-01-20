@@ -18,7 +18,7 @@ QDEMColorMap::QDEMColorMap()
     this->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     this->axisRect()->setupFullAxesBox(true);
     // QCPColorMap
-    m_cmap = new QCPColorMap(xAxis, yAxis);
+    m_cmap = new QCPColorMap(this->xAxis, this->yAxis);
     m_cmap->setInterpolate(false);
         // Signals and slots
     connect(m_dem, SIGNAL(progressChanged(const double&)), this, SLOT(onProgressChanged(const double&)));
@@ -32,6 +32,12 @@ QDEMColorMap::QDEMColorMap()
     QCPMarginGroup *marginGroup = new QCPMarginGroup(this);
     this->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
     m_cscale->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
+
+//    //
+//    QCPItemPixmap *locationItem = new QCPItemPixmap(this);
+//    locationItem->setPixmap(QPixmap(QString(":/qss/dark/icons/svg/application-exit.svg")));
+//    locationItem->position()->setAxes(this->xAxis, this->yAxis);
+//    location->setScaled(true);
 }
 
 // Destructor
@@ -51,14 +57,14 @@ void QDEMColorMap::openDEM(const fs::path &demPath)
         m_Xmax = m_X1 = m_dem->getXmax();
         m_Ymax = m_Y1 = m_dem->getYmax();
         m_noDataValue = m_dem->getNoDataValue();
-        m_axes = m_dem->getAxesUnit();
+        m_axesUnit = m_dem->getAxesUnit();
         // give the axes some labels:
-        if ( m_axes == GeoTiffDEMAxesUnit::LonLat )
+        if ( m_axesUnit == GeoTiffDEMAxesUnit::LonLat )
         {
             this->xAxis->setLabel("Longitude [°]");
             this->yAxis->setLabel("Latitude [°]");
         }
-        else if ( m_axes == GeoTiffDEMAxesUnit::NorthEast )
+        else if ( m_axesUnit == GeoTiffDEMAxesUnit::NorthEast )
         {
             this->xAxis->setLabel("Easting [m]");
             this->yAxis->setLabel("Northing [m]");
@@ -108,6 +114,16 @@ void QDEMColorMap::plotDEM(bool axesEquals)
     });
 }
 
+bool QDEMColorMap::isDEMOpened(){ return m_dem->isOpened(); };
+
+void QDEMColorMap::getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin)
+{
+    Xmin = m_Xmin;
+    Ymax = m_Ymax;
+    Xmax = m_Xmax;
+    Ymin = m_Ymin;
+}
+GeoTiffDEMAxesUnit QDEMColorMap::getDEMAxesUnit() { return m_axesUnit; };
 void QDEMColorMap::setBackgroundColor(const QColor &color){ setBackground(QBrush(color));}
 void QDEMColorMap::setAxisRectBackgroundColor(const QColor &color){ this->axisRect()->setBackground(QBrush(color)); }
 void QDEMColorMap::setAxesColor(const QColor &color)
@@ -141,6 +157,22 @@ void QDEMColorMap::setAxesColor(const QColor &color)
 //#################################//
 //##### Interaction functions #####//
 //#################################//
+QString QDEMColorMap::getZAtXYasStr(const double &X, const double &Y)
+{
+    if ( X >= m_Xmin && X <= m_Xmax && Y >= m_Ymin && Y <= m_Ymax )
+    {
+        // nodata value handling
+        double epsilon = std::numeric_limits<double>::epsilon() * 10.0,
+               Z = m_dem->getZAtXY(X, Y);
+        if ( std::abs( Z - m_dem->getNoDataValue() ) < epsilon ) // nodata case
+            return QString("n/a");
+        else
+            return QString("%1m").arg(QString::number(Z, 'f', 3));
+    }
+    else
+        return QString("n/a");
+}
+
 void QDEMColorMap::resetZoom()
 {
     if ( m_dem->isOpened() && !m_isPlotting )
@@ -520,7 +552,7 @@ void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
                 }
                 else // in the cmap rect but not in the data rect -> like 'nodata'
                     Zstr = QString("-");
-                switch ( m_axes )
+                switch ( m_axesUnit )
                 {
                 case LonLat:
                     value = QString("lon: %1°, lat: %2°, alt: %3").arg(Xstr, Ystr, Zstr);break;

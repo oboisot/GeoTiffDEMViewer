@@ -128,7 +128,6 @@ else()
 endif()
 # Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 install(CODE "set(MY_DEPENDENCY_PATHS \"${MY_DEPENDENCY_PATHS}\")")
-
 install(CODE [[
  file(GET_RUNTIME_DEPENDENCIES
       EXECUTABLES $<TARGET_FILE:GeoTiffDEMViewer>

@@ -4,8 +4,6 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
 {
     // QDEMColorMap
     createQDEMColorMap();
-    //MenuBar
-//    createMenubar();
     // StatusBar
     createStatusBar();
     // ToolBar
@@ -36,50 +34,98 @@ void GeoTiffDEMViewerWindow::createQDEMColorMap()
     // Create QDEMColorMap
     GDALAllRegister(); // Initialize GDAL drivers
     m_demCmap = new QDEMColorMap();
+    // Axes Unit default initialization
+    m_axesUnit = GeoTiffDEMAxesUnit::Pixels;
+    // DEM extent default initialization
+    m_Xmin = m_Ymax = m_Xmax = m_Ymin=0.0;
     // QCustomPlot colors and style
     m_demCmap->setBackgroundColor(QColor(25, 25, 25));
     m_demCmap->setAxisRectBackgroundColor(QColor(80, 80, 80));
     m_demCmap->setAxesColor(QColor(169, 183, 198));
-
     // Signals and slots
     connect(m_demCmap, &QDEMColorMap::cursorChanged, this, [=](const QCursor &cursor){ this->setCursor(cursor); });
 }
 
-void GeoTiffDEMViewerWindow::createMenubar()
+void GeoTiffDEMViewerWindow::createToolBar()
 {
-//    // Open file QFfileDialog
-//    m_openDialog = new QFileDialog(this);
-//    m_openDialog->setWindowTitle(tr("Open a GeoTiff DEM file"));
-//    m_openDialog->setAcceptMode(QFileDialog::AcceptOpen);
-//    m_openDialog->setFileMode(QFileDialog::ExistingFile);
-//    m_openDialog->setNameFilter(tr("GeoTIFF (*.tiff *.tif *.gtif)"));
-//    // Open file action
-//    QAction *openAction = new QAction(tr("&Open"));
-//    connect(openAction, &QAction::triggered, this, [&](){
-//        if ( m_openDialog->exec() )
-//        {
-//            QStringList fileList = m_openDialog->selectedFiles();
-//            if ( !fileList.isEmpty() )
-//            {
-//                fs::path demPath = fileList[0].toStdString();
-//                m_demCmap->openDEM(demPath);
-//                setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
-//                m_demCmap->plotDEM(true);
-//            }
-//        }
+    QToolBar *toolBar = new QToolBar();
+    toolBar->setFloatable(false);
+    toolBar->setMovable(false);
+    addToolBar(Qt::TopToolBarArea, toolBar);
+    // Open file action
+    toolBar->addSeparator();
+    QAction *openAction = new QAction(tr("&Open..."));
+    openAction->setShortcut(QKeySequence::Open);
+    openAction->setToolTip(QString("Open a GeoTiff DEM file (%1)").arg(QKeySequence(QKeySequence::Open).toString()));
+    openAction->setIcon(QIcon(":/qss/dark/icons/svg/folder.svg"));
+    connect(openAction, SIGNAL(triggered()), this, SLOT(openDEMFile()));
+    toolBar->addAction(openAction);
+    openAction->setObjectName("openAction");
+    toolBar->addSeparator();
+    //
+    QAction *resetZoomAction = new QAction("&Original view...");
+    resetZoomAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    resetZoomAction->setToolTip(QString("Original view (%1)").arg(QKeySequence(Qt::CTRL | Qt::Key_0).toString()));
+    resetZoomAction->setIcon(QIcon(":/qss/dark/icons/svg/zoom-original.svg"));
+    connect(resetZoomAction, &QAction::triggered, this, [=](){ m_demCmap->resetZoom(); });
+    toolBar->addAction(resetZoomAction);
+    //
+    QAction *zoomInAction = new QAction("&Zoom in...");
+    zoomInAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Plus));
+    zoomInAction->setToolTip(QString("Zoom in (%1)\nUse: mouse left double-click for X2 zoom out\nUse: Ctrl+<0-10> to go to the given zoom level").arg(
+                                 QKeySequence(Qt::CTRL | Qt::Key_Plus).toString()));
+    zoomInAction->setIcon(QIcon(":/qss/dark/icons/svg/zoom-in.svg"));
+    connect(zoomInAction, &QAction::triggered, this, [=](){ m_demCmap->zoomIn(); });
+    toolBar->addAction(zoomInAction);
+    //
+    QAction *zoomOutAction = new QAction("&Zoom out...");
+    zoomOutAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus));
+    zoomOutAction->setToolTip(QString("Zoom out (%1)\nUse: mouse right double-click for X2 zoom out\nUse Ctrl+<0-10> to go to the given zoom level").arg(
+                                  QKeySequence(Qt::CTRL | Qt::Key_Minus).toString()));
+    zoomOutAction->setIcon(QIcon(":/qss/dark/icons/svg/zoom-out.svg"));
+    connect(zoomOutAction, &QAction::triggered, this, [=](){ m_demCmap->zoomOut(); });
+    toolBar->addAction(zoomOutAction);
+    //
+    QAction *refreshAction = new QAction("&Replot...");
+    refreshAction->setShortcut(QKeySequence::Refresh);
+    refreshAction->setToolTip(QString("Replot DEM (%1)").arg(QKeySequence(QKeySequence::Refresh).toString()));
+    refreshAction->setIcon(QIcon(":/qss/dark/icons/svg/view-refresh.svg"));
+//    connect(replotAction, &QAction::triggered, this, [=](){
+//        if ( m_demCmap->isDEMOpened() )
+//            m_demCmap->plotDEM(true);
 //    });
+    toolBar->addAction(refreshAction);
+    toolBar->addSeparator();
+    //
+    QAction *selectionRectAction = new QAction("&Rect...");
+    selectionRectAction->setShortcut(QKeySequence(tr("Ctrl+A")));
+    selectionRectAction->setToolTip(QString("Selection area (Ctrl+A)"));
+    selectionRectAction->setIcon(QIcon(":/qss/dark/icons/svg/selection-rect.svg"));
+    toolBar->addAction(selectionRectAction);
+    //
+    QAction *saveAsBitmapAction = new QAction("&Save as...");
+    saveAsBitmapAction->setShortcut(QKeySequence::SaveAs);
+    saveAsBitmapAction->setToolTip(QString("Save current plot (%1)").arg(QKeySequence(QKeySequence::SaveAs).toString()));
+    saveAsBitmapAction->setIcon(QIcon(":/qss/dark/icons/svg/document-save-as.svg"));
+    toolBar->addAction(saveAsBitmapAction);
+    // Information action
+    QAction *infoAction = new QAction(tr("&Infos..."));
+    infoAction->setShortcut(QKeySequence(tr("Ctrl+I")));
+    infoAction->setToolTip(QString("DEM informations (Ctrl+I)"));
+    infoAction->setIcon(QIcon(":/qss/dark/icons/svg/dialog-information.svg"));
+    toolBar->addAction(infoAction);
+    toolBar->addSeparator();
+    // Get altitude Widget
+    toolBar->addWidget(this->createGetAltWidget());
+    toolBar->addSeparator();
     // Close application action
-    QAction *closeAction = new QAction(tr("&Close"));
+    QAction *closeAction = new QAction(tr("&Quit..."));
+    closeAction->setShortcut(QKeySequence::Quit);
+    closeAction->setToolTip(QString("Quit application (%1)").arg(QKeySequence(QKeySequence::Quit).toString()));
+    closeAction->setIcon(QIcon(":/qss/dark/icons/svg/application-exit.svg"));
     connect(closeAction, &QAction::triggered, this, [&](){ this->close(); });
-    // File menu
-    QMenu *fileMenu = new QMenu(tr("&File"));
-//    fileMenu->addAction(openAction);
-    fileMenu->addSeparator();
-    fileMenu->addAction(closeAction);
-    // MenuBar
-    QMenuBar *menuBar = new QMenuBar();
-    menuBar->addMenu(fileMenu);
-    setMenuBar(menuBar);
+    toolBar->addAction(closeAction);
+    toolBar->addSeparator();
 }
 
 void GeoTiffDEMViewerWindow::createStatusBar()
@@ -133,45 +179,6 @@ void GeoTiffDEMViewerWindow::createStatusBar()
     statusBar()->addPermanentWidget(m_progressBar, 1);
 }
 
-void GeoTiffDEMViewerWindow::createToolBar()
-{
-    QToolBar *toolBar = new QToolBar();
-    // Open file action
-    QAction *openAction = new QAction(tr("&Open..."));
-    openAction->setShortcuts(QKeySequence::Open);
-    openAction->setToolTip(tr("Open a GeoTiff DEM file (Ctrl+O)"));
-    openAction->setIcon(QIcon(":/qss/dark/icons/svg/document-open.svg"));
-    connect(openAction, &QAction::triggered, this, [=](){
-        QString fileName = QFileDialog::getOpenFileName(this, tr("Open a GeoTiff DEM file"),
-                                                        "",
-                                                        tr("GeoTIFF (*.tiff *.tif *.gtif)"));
-        if ( fileName != "" )
-        {
-            fs::path demPath = fileName.toStdString();
-            m_demCmap->openDEM(demPath);
-            setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
-            m_demCmap->plotDEM(true);
-        }
-    });
-    toolBar->addAction(openAction);
-    openAction->setObjectName("openAction");
-    toolBar->addSeparator();
-    //
-    QAction *resetZoomAction = new QAction("home");
-    connect(resetZoomAction, &QAction::triggered, this, [=](){m_demCmap->resetZoom();});
-    toolBar->addAction(resetZoomAction);
-    //
-    QAction *zoomPlusAction = new QAction("zoom+");
-    connect(zoomPlusAction, &QAction::triggered, this, [=](){m_demCmap->zoomIn();});
-    toolBar->addAction(zoomPlusAction);
-    //
-    QAction *zoomMinusAction = new QAction("zoom-");
-    connect(zoomMinusAction, &QAction::triggered, this, [=](){m_demCmap->zoomOut();});
-    toolBar->addAction(zoomMinusAction);
-    //
-    addToolBar(Qt::TopToolBarArea, toolBar);
-}
-
 void GeoTiffDEMViewerWindow::createCentralWidget()
 {
 //    QGridLayout *layout = new QGridLayout();
@@ -187,11 +194,149 @@ void GeoTiffDEMViewerWindow::createCentralWidget()
     setCentralWidget(m_demCmap);
 }
 
+QWidget *GeoTiffDEMViewerWindow::createGetAltWidget()
+{
+        // Labels
+    m_Xlabel = new QLabel("X:");
+    m_Xlabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    m_Ylabel = new QLabel("Y:");
+    m_Ylabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    m_Zlabel = new QLabel(" → Alt: n/a");
+    m_Zlabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    m_Zlabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_Xunit = new QLabel(" ");
+    m_Xunit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    m_Yunit = new QLabel(" ");
+    m_Yunit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+        // Line edit validators
+    m_XlineValidator = new QDoubleValidator(m_Xmin, m_Xmax, 12);
+    m_XlineValidator->setLocale(m_numberLocale); // uses '.' as a decimal point
+    m_YlineValidator = new QDoubleValidator(m_Ymin, m_Ymax, 12);
+    m_YlineValidator->setLocale(m_numberLocale); // uses '.' as a decimal point
+        // Line edit
+    m_Xline = new QLineEdit();
+    m_Xline->setPlaceholderText("");
+    m_Xline->setValidator(m_XlineValidator);
+    m_Xline->setMaximumWidth(100);
+    m_Xline->setDisabled(true);
+    m_Yline = new QLineEdit();
+    m_Yline->setPlaceholderText("");
+    m_Yline->setValidator(m_YlineValidator);
+    m_Yline->setMaximumWidth(100);
+    m_Yline->setDisabled(true);
+    connect(m_Xline, &QLineEdit::textChanged, this, [=](){ this->XlineEditChanged(); });
+    connect(m_Yline, &QLineEdit::textChanged, this, [=](){ this->YlineEditChanged(); });
+        // Layout
+    QHBoxLayout *layout = new QHBoxLayout();
+    layout->addWidget(m_Xlabel);
+    layout->addWidget(m_Xline);
+    layout->addWidget(m_Xunit);
+    layout->addWidget(m_Ylabel);
+    layout->addWidget(m_Yline);
+    layout->addWidget(m_Yunit);
+    layout->addWidget(m_Zlabel);
+    layout->insertStretch(0, 1);
+    layout->addStretch(1);
+    QWidget *widget = new QWidget();
+    widget->setLayout(layout);
+    return widget;
+}
+
 void GeoTiffDEMViewerWindow::closeEvent(QCloseEvent *event)
 {
     if (QMessageBox::Yes != QMessageBox::question(this, "Close Confirmation?",
         "Are you sure you want to exit?", QMessageBox::Yes | QMessageBox::No))
     {
         event->ignore();
+    }
+}
+
+/*****************
+ * PRIVATE SLOTS *
+ *****************/
+void GeoTiffDEMViewerWindow::openDEMFile()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open a GeoTiff DEM file"),
+                                                    "",
+                                                    tr("GeoTIFF (*.tiff *.tif *.gtif)"));
+    if ( fileName != "" )
+    {
+        fs::path demPath = fileName.toStdString();
+        m_demCmap->openDEM(demPath);
+        if ( m_demCmap->isDEMOpened() )
+        {
+            setWindowTitle(("GeoTiffDEM: " + demPath.filename().string()).c_str());
+            m_demCmap->plotDEM(true);
+            m_demCmap->getDEMExtent(m_Xmin, m_Ymax, m_Xmax, m_Ymin);
+            m_XlineValidator->setBottom(m_Xmin);
+            m_XlineValidator->setTop(m_Xmax);
+            m_YlineValidator->setBottom(m_Ymin);
+            m_YlineValidator->setTop(m_Ymax);
+            m_Xline->setEnabled(true);
+            m_Xline->setText("");
+            m_Xline->setStyleSheet("QLineEdit {border: 1px solid gray;} QLineEdit:focus {border: 1px solid #d28140;}");
+            m_Yline->setEnabled(true);
+            m_Yline->setText("");
+            m_Yline->setStyleSheet("QLineEdit {border: 1px solid gray;} QLineEdit:focus {border: 1px solid #d28140;}");
+            m_Zlabel->setText(" → Alt: n/a");
+            m_axesUnit = m_demCmap->getDEMAxesUnit();
+            if ( m_axesUnit == GeoTiffDEMAxesUnit::LonLat )
+            {
+                m_Xlabel->setText("Lon:");
+                m_Ylabel->setText("Lat:");
+                m_Xunit->setText("°");
+                m_Yunit->setText("°");
+            }
+            else if ( m_axesUnit == GeoTiffDEMAxesUnit::NorthEast )
+            {
+                m_Xlabel->setText("North:");
+                m_Ylabel->setText("East:");
+                m_Xunit->setText("m");
+                m_Yunit->setText("m");
+            }
+            else
+            {
+                m_Xlabel->setText("X:");
+                m_Ylabel->setText("Y:");
+                m_Xunit->setText("px");
+                m_Yunit->setText("px");
+            }
+        }
+    }
+}
+
+
+/*******************
+ * PRIVATE METHODS *
+ *******************/
+void GeoTiffDEMViewerWindow::XlineEditChanged()
+{
+    if ( m_demCmap->isDEMOpened() )
+    {
+        if ( m_Xline->hasAcceptableInput() )
+        {
+            m_Xline->setStyleSheet("QLineEdit {border: 1px solid gray;} QLineEdit:focus {border: 1px solid #d28140;}");
+            double X = m_numberLocale.toDouble(m_Xline->text()),
+                   Y = m_numberLocale.toDouble(m_Yline->text());
+            m_Zlabel->setText(QString(" → Alt: %1").arg(m_demCmap->getZAtXYasStr(X, Y)));
+        }
+        else
+            m_Xline->setStyleSheet("QLineEdit {border: 1px solid #ff0000;}");
+    }
+}
+
+void GeoTiffDEMViewerWindow::YlineEditChanged()
+{
+    if ( m_demCmap->isDEMOpened() )
+    {
+        if ( m_Yline->hasAcceptableInput() )
+        {
+            m_Yline->setStyleSheet("QLineEdit {border: 1px solid gray;} QLineEdit:focus {border: 1px solid #d28140;}");
+            double X = m_numberLocale.toDouble(m_Xline->text()),
+                   Y = m_numberLocale.toDouble(m_Yline->text());
+            m_Zlabel->setText(QString(" → Alt: %1").arg(m_demCmap->getZAtXYasStr(X, Y)));
+        }
+        else
+            m_Yline->setStyleSheet("QLineEdit {border: 1px solid #ff0000;}");
     }
 }

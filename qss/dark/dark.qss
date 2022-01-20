@@ -5,6 +5,8 @@ QMainWindow {
 QToolBar {
 	background-color: #191919;
 	min-height: 40px;
+	border-top: 1px solid #bebebe;
+	border-bottom: 1px solid #bebebe;
 }
 
 QToolBar::separator {
@@ -16,11 +18,16 @@ QToolBar::separator {
 QStatusBar {
 	background-color: #191919;
 	min-height: 30px;
+	border-top: 1px solid #bebebe;
 }
 
-QStatusBar QLabel {
-    border: 0.5px solid #ffffff;
+QStatusBar::separator {
+	min-height: 30px;
 }
+
+/* QStatusBar QLabel {
+    border: 0.5px solid #ffffff;
+} */
 
 QProgressBar {
 	text-align: center;
@@ -40,53 +47,32 @@ QProgressBar::chunk {
 QDialog {
 	background-color: #191919;
 }
-QColorDialog {
-	background-color:#191919;
-}
 
 QLabel {
 	color: #a9b7c6;
 }
 
-QPushButton, QToolButton {
-	min-height: 36px;
-	min-width: 36px;
+QPushButton, QToolButton, QPushButton::default, QToolButton::default {
+	min-height: 40px;
+	min-width: 40px;
 	border: 1px transparent;
 	color: #a9b7c6;
 	background-color: #191919;
 }
 
-QPushButton::default{
-	min-height: 36px;
-	min-width: 36px;
-	border: 1px transparent;
-	color: #a9b7c6;
-	background-color: #191919;
-}
-
-QPushButton:hover{
-	border-style: inset;
-	border-top-color: transparent;
-	border-right-color: transparent;
-	border-left-color: transparent;
-	border-bottom-color: #FF00FF;
-	border-bottom-width: 1px;
+QPushButton:hover, QToolButton:hover {
+	border: 1px solid #d28140;
 	color: #ffffff;
-	padding-bottom: 2px;
-	background-color: #000000;
+	background-color: #191919;
 }
-QPushButton:pressed{
-	border-style: solid;
-	border-top-color: transparent;
-	border-right-color: transparent;
-	border-left-color: transparent;
-	border-bottom-color: #FF00FF;
-	border-bottom-width: 2px;
-	border-style: solid;
-	color: #e67e22;
-	padding-bottom: 1px;
-	background-color: #000000;
+
+QPushButton:pressed, QToolButton:pressed {
+	border: 2px solid #d28140;
+	color: #ffffff;
+	/* background-color: #191919; */
+	background-color: rgba(100, 100, 100, 120);
 }
+
 QPushButton:disabled{
 	border-style: solid;
 	border-top-color: transparent;
@@ -100,30 +86,16 @@ QPushButton:disabled{
 	background-color: #000000;
 }
 
-QToolButton {
-	min-height: 36px;
-	min-width: 36px;
-	border: 1px transparent;
+QLineEdit {
 	color: #a9b7c6;
-	background-color: #191919;
-	/* margin: 0px; */
+	border: 1px solid gray;
+    border-radius: 3px;
+    padding: 2px;
+    background-color: #191919;
+    selection-background-color: rgba(255, 255, 255, 0.5);
 }
-QToolButton:hover{
+
+QLineEdit:focus {
+	background-color: rgba(100, 100, 100, 120);
 	border: 1px solid #d28140;
-	color: #ffffff;
-	background-color: #191919;
-	/* margin: 0px; */
 }
-QToolButton:pressed{
-	border: 2px solid #d28140;
-	color: #ffffff;
-	background-color: #191919;
-}
-
-/* QToolButton#openAction {
-	image: url(:/qss/dark/icons/svg/document-open.svg);
-}
-
-QToolButton#openAction:pressed {
-	image: url(:/qss/dark/icons/document-open-hovered.png);
-} */

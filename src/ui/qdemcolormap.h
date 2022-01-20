@@ -29,15 +29,18 @@ public:
     explicit QDEMColorMap();
     ~QDEMColorMap();
 
-    // Getter
-    QCPColorMap *cmap();
     //
     void openDEM(const fs::path &demPath);
     void plotDEM(bool axesEquals);
+    bool isDEMOpened();
+    void getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin);
+    GeoTiffDEMAxesUnit getDEMAxesUnit();
+    // QCustomPlot styling
     void setBackgroundColor(const QColor &color);
     void setAxisRectBackgroundColor(const QColor &color);
     void setAxesColor(const QColor &color);
     // Interaction functions
+    QString getZAtXYasStr(const double &X, const double &Y);
     void resetZoom();
     /*!
      * \brief zoomIn
@@ -82,7 +85,7 @@ private:
     //
     QCPColorMap *m_cmap;
     QCPColorScale *m_cscale;
-    GeoTiffDEMAxesUnit m_axes;
+    GeoTiffDEMAxesUnit m_axesUnit;
     std::size_t m_bufXsize, m_bufYsize;
     double m_Xmin, m_Ymin, m_Xmax, m_Ymax,
            m_X0, m_Y0, m_X1, m_Y1,

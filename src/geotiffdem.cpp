@@ -237,6 +237,8 @@ double **GeoTiffDEM::interpFromXYboundingBox(const double &Xmin, const double &Y
 
 double GeoTiffDEM::getZAtPixels(const double &pX, const double &pY)
 {
+    // nodata value handling
+    double epsilon = std::numeric_limits<double>::epsilon() * 10.0;
     std::size_t pXmin = static_cast<std::size_t>(pX),
                 pYmin = static_cast<std::size_t>(pY),
                 pXmax = pXmin + 1,
@@ -254,12 +256,20 @@ double GeoTiffDEM::getZAtPixels(const double &pX, const double &pY)
     }
     double **zbuffer = this->readFromPixelsBoundingBox(pXmin, pYmin, pXmax, pYmax,
                                                        zbufXsize, zbufYsize);
-    double dX0 = pXmax - pX,
-           dY0 = pYmax - pY,
-           dX1 = pX - pXmin,
-           dY1 = pY - pYmin,
-           z = zbuffer[0][0] * dX0 * dY0 + zbuffer[0][1] * dX1 * dY0 +
-               zbuffer[1][0] * dX0 * dY1 + zbuffer[1][1] * dX1 * dY1;
+    double z00 = static_cast<double>(zbuffer[0][0]),
+           z01 = static_cast<double>(zbuffer[0][1]),
+           z10 = static_cast<double>(zbuffer[1][0]),
+           z11 = static_cast<double>(zbuffer[1][1]),
+           z   = m_noDataValue;
+    if ( std::abs( z00 - m_noDataValue ) >= epsilon && std::abs( z01 - m_noDataValue ) >= epsilon &&
+         std::abs( z10 - m_noDataValue ) >= epsilon && std::abs( z11 - m_noDataValue ) >= epsilon ) // NO nodata case
+    {
+        double dX0 = pXmax - pX,
+               dY0 = pYmax - pY,
+               dX1 = pX - pXmin,
+               dY1 = pY - pYmin;
+        z = z00 * dX0 * dY0 + z01 * dX1 * dY0 + z10 * dX0 * dY1 + z11 * dX1 * dY1;
+    }
     this->deleteZbuffer(zbufYsize, zbuffer);
     return z;
 }
