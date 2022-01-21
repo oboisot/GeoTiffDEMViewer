@@ -10,9 +10,10 @@ QToolBar {
 }
 
 QToolBar::separator {
-	background-color: #d28140;
-	width: 2px;
-	min-height: 36px;
+	/* background-color: #d28140; */
+	background-color: #bebebe;
+	width: 1px;
+	min-height: 40px;
 }
 
 QStatusBar {
@@ -21,8 +22,8 @@ QStatusBar {
 	border-top: 1px solid #bebebe;
 }
 
-QStatusBar::separator {
-	min-height: 30px;
+QStatusBar::item {
+	border: none;
 }
 
 /* QStatusBar QLabel {

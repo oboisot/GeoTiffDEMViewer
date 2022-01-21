@@ -33,11 +33,23 @@ QDEMColorMap::QDEMColorMap()
     this->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
     m_cscale->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
 
-//    //
-//    QCPItemPixmap *locationItem = new QCPItemPixmap(this);
-//    locationItem->setPixmap(QPixmap(QString(":/qss/dark/icons/svg/application-exit.svg")));
-//    locationItem->position()->setAxes(this->xAxis, this->yAxis);
-//    location->setScaled(true);
+
+    //
+    QCPItemTracer *itemPositionTracer = new QCPItemTracer(this);
+    itemPositionTracer->setStyle(QCPItemTracer::tsNone);
+    itemPositionTracer->position->setType(QCPItemPosition::ptPlotCoords);
+    itemPositionTracer->position->setAxes(this->xAxis, this->yAxis);
+    itemPositionTracer->position->setCoords(0.0, 45.0);
+    //
+    QCPItemPixmap *locationItem = new QCPItemPixmap(this);
+    locationItem->setPixmap(QPixmap(":/qss/dark/icons/svg/cursor-geolocation-96x96.svg").scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    locationItem->setScaled(false);
+    locationItem->topLeft->setType(QCPItemPosition::ptAbsolute);
+    locationItem->topLeft->setParentAnchor(itemPositionTracer->position);
+    locationItem->topLeft->setCoords(-12, -24);
+//    locationItem->topLeft->setAxes(this->xAxis, this->yAxis);
+//    locationItem->topLeft->setCoords(0.0, 45.0);
+
 }
 
 // Destructor

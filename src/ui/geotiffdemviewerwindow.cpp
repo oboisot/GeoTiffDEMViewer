@@ -158,23 +158,17 @@ void GeoTiffDEMViewerWindow::createStatusBar()
     //
     m_coordLabel = new QLabel(" ");
     m_coordLabel->setAlignment(Qt::AlignCenter);
-    connect(m_demCmap, &QDEMColorMap::cmapCursorPosChanged, this,
-        [=](const QString &value) { m_coordLabel->setText(value); }
-    );
+    connect(m_demCmap, &QDEMColorMap::cmapCursorPosChanged, this, [=](const QString &value) { m_coordLabel->setText(value); });
     statusBar()->addPermanentWidget(m_coordLabel, 3);
     //
     m_zoomLabel = new QLabel("zoom: 0");
-    m_zoomLabel->setAlignment(Qt::AlignCenter);
-    connect(m_demCmap, &QDEMColorMap::zoomChanged, this,
-        [=](const int &zoomLevel) { m_zoomLabel->setText(QString("zoom: %1").arg(zoomLevel)); }
-    );
+    m_zoomLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    connect(m_demCmap, &QDEMColorMap::zoomChanged, this, [=](const int &zoomLevel) { m_zoomLabel->setText(QString("zoom: %1").arg(zoomLevel)); });
     statusBar()->addPermanentWidget(m_zoomLabel, 1);
     //
     m_progressBar = new QProgressBar();
     m_progressBar->setRange(0, 100);
-    connect(m_demCmap, &QDEMColorMap::progressChanged, this,
-        [=](const double &progress) { m_progressBar->setValue(static_cast<int>(progress * 100.0)); }
-    );
+    connect(m_demCmap, &QDEMColorMap::progressChanged, this, [=](const double &progress) { m_progressBar->setValue(static_cast<int>(progress * 100.0)); });
     //
     statusBar()->addPermanentWidget(m_progressBar, 1);
 }
