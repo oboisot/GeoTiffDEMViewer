@@ -15,8 +15,8 @@
    preserveAspectRatio="xMidYMid meet"
    version="1.1"
    id="svg873"
-   sodipodi:docname="cursor-position-96x96.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="selection-rect.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    inkscape:export-filename="/home/oboisot/Documents/GitHub/GeoTiffDEMViewer/qss/dark/icons/48x48/document-open.png"
    inkscape:export-xdpi="7.6799998"
    inkscape:export-ydpi="7.6799998">
@@ -43,23 +43,39 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1057"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
      id="namedview875"
      showgrid="false"
-     inkscape:zoom="0.8148943"
-     inkscape:cx="-0.98587698"
-     inkscape:cy="30.447176"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:zoom="5.5866666"
+     inkscape:cx="52.054207"
+     inkscape:cy="53.091291"
+     inkscape:window-x="1920"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg873"
      inkscape:snap-object-midpoints="true"
      showguides="true"
-     inkscape:guide-bbox="true"
-     inkscape:pagecheckerboard="true" />
-  <path
-     style="fill:#d28140;fill-opacity:1;stroke:#d28140;stroke-width:9.505;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 48 4.7226562 C 31.7933 4.7426563 18.890756 18.505299 18.847656 32.267578 C 18.804556 46.029858 25.724771 52.297376 29.207031 58.669922 L 48 91.21875 L 66.792969 58.669922 C 70.275229 52.297382 77.195444 46.029857 77.152344 32.267578 C 77.109194 18.505299 64.2067 4.7426562 48 4.7226562 z M 48 12.267578 A 20 20 0 0 1 68 32.267578 A 20 20 0 0 1 48 52.267578 A 20 20 0 0 1 28 32.267578 A 20 20 0 0 1 48 12.267578 z "
-     id="path836-3-0" />
+     inkscape:guide-bbox="true" />
+  <g
+     id="g906"
+     transform="matrix(0.16071429,0,0,0.16071429,-0.21428685,-0.21428685)">
+    <rect
+       y="49.999771"
+       x="49.999771"
+       height="390.00046"
+       width="390.00046"
+       id="rect852"
+       style="fill:none;fill-opacity:1;stroke:#d28140;stroke-width:59.99954605;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path854"
+       d="M 360,470 H 580"
+       style="fill:none;stroke:#ffffff;stroke-width:60;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path854-5"
+       d="M 470,580 V 360"
+       style="fill:none;stroke:#ffffff;stroke-width:60;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  </g>
 </svg>

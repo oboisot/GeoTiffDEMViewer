@@ -32,24 +32,19 @@ QDEMColorMap::QDEMColorMap()
     QCPMarginGroup *marginGroup = new QCPMarginGroup(this);
     this->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
     m_cscale->setMarginGroup(QCP::msBottom|QCP::msTop, marginGroup);
-
-
-    //
-    QCPItemTracer *itemPositionTracer = new QCPItemTracer(this);
-    itemPositionTracer->setStyle(QCPItemTracer::tsNone);
-    itemPositionTracer->position->setType(QCPItemPosition::ptPlotCoords);
-    itemPositionTracer->position->setAxes(this->xAxis, this->yAxis);
-    itemPositionTracer->position->setCoords(0.0, 45.0);
-    //
-    QCPItemPixmap *locationItem = new QCPItemPixmap(this);
-    locationItem->setPixmap(QPixmap(":/qss/dark/icons/svg/cursor-geolocation-96x96.svg").scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    locationItem->setScaled(false);
-    locationItem->topLeft->setType(QCPItemPosition::ptAbsolute);
-    locationItem->topLeft->setParentAnchor(itemPositionTracer->position);
-    locationItem->topLeft->setCoords(-12, -24);
-//    locationItem->topLeft->setAxes(this->xAxis, this->yAxis);
-//    locationItem->topLeft->setCoords(0.0, 45.0);
-
+    // geolocation cursor position
+    m_geolocationItemPosition = new QCPItemTracer(this);
+    m_geolocationItemPosition->setStyle(QCPItemTracer::tsNone);
+    m_geolocationItemPosition->position->setType(QCPItemPosition::ptPlotCoords);
+    m_geolocationItemPosition->position->setAxes(this->xAxis, this->yAxis);
+    m_geolocationItemPosition->position->setCoords(0.0, 0.0);
+    // geolocation cursor item
+    m_geolocationItem = new QCPItemPixmap(this);
+    m_geolocationItem->setPixmap(QPixmap(":/qss/dark/icons/svg@96x96/cursor-geolocation.svg").scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_geolocationItem->setScaled(false);
+    m_geolocationItem->topLeft->setType(QCPItemPosition::ptAbsolute);
+    m_geolocationItem->topLeft->setParentAnchor(m_geolocationItemPosition->position);
+    m_geolocationItem->topLeft->setCoords(-14, -28);
 }
 
 // Destructor
@@ -298,6 +293,25 @@ void QDEMColorMap::zoomOut(const int &zoomStep, const double &tX, const double &
     }
 }
 
+void QDEMColorMap::zoomTo(const int &zoomLevel, const double &tX, const double &tY)
+{
+    if ( zoomLevel > m_zoomLevel )
+        this->zoomIn(zoomLevel - m_zoomLevel, tX, tY);
+    else if ( zoomLevel < m_zoomLevel )
+        this->zoomOut(m_zoomLevel - zoomLevel, tX, tY);
+}
+
+void QDEMColorMap::setGeolocationCursorPosition(const double &X, const double &Y)
+{
+    m_geolocationItemPosition->position->setCoords(X, Y);
+    if (!m_isPlotting) this->replotDEM(false);
+}
+
+void QDEMColorMap::setGeolocationCursorVisible(const bool &visible)
+{
+    m_geolocationItemPosition->setVisible(visible);
+}
+
 //#############################//
 //##### Private functions #####//
 //#############################//
@@ -465,7 +479,7 @@ void QDEMColorMap::mousePressEvent(QMouseEvent *event)
             }
         }
         else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 5000);
+            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
     }
     else
         event->ignore();
@@ -493,7 +507,7 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
             }
         }
         else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 5000);
+            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
         QCustomPlot::mouseReleaseEvent(event);
     }
     else
@@ -534,7 +548,7 @@ void QDEMColorMap::mouseDoubleClickEvent(QMouseEvent *event)
                 event->ignore();
         }
         else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 5000);
+            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
     }
     else
         event->ignore();
@@ -579,7 +593,7 @@ void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
             }
         }
         else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 5000);
+            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
         QCustomPlot::mouseMoveEvent(event);
     }
     else
@@ -600,7 +614,7 @@ void QDEMColorMap::wheelEvent(QWheelEvent *event)
         else
         {
             event->ignore();
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 5000);
+            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
         }
     }
     else

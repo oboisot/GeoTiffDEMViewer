@@ -54,6 +54,9 @@ public:
      */
     void zoomIn(const int &zoomStep=1, const double &tX=0.0, const double &tY=0.0);
     void zoomOut(const int &zoomStep=1, const double &tX=0.0, const double &tY=0.0);
+    void zoomTo(const int &zoomLevel, const double &tX=0.0, const double &tY=0.0);
+    void setGeolocationCursorPosition(const double &X, const double &Y);
+    void setGeolocationCursorVisible(const bool &visible);
 
 
 signals:
@@ -93,6 +96,9 @@ private:
            m_zbufZmin, m_zbufZmax,
            m_progress_old, m_progress;
     QPoint m_mousePressPos;
+    //
+    QCPItemTracer *m_geolocationItemPosition;
+    QCPItemPixmap *m_geolocationItem;
     // Private methods
     void initBufSizeFromScreenSize();
     void replotDEM(bool axesEquals);

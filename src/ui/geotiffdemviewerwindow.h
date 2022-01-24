@@ -14,10 +14,6 @@ public:
     explicit GeoTiffDEMViewerWindow(QWidget *parent = nullptr);
     ~GeoTiffDEMViewerWindow();
 
-
-signals:
-    void queryZAtXY(const double &X, const double &Y);
-
 private slots:
     void openDEMFile();
 
@@ -44,9 +40,10 @@ private:
     void createToolBar();    
     void createStatusBar();
     void createCentralWidget();
+    void createShortcuts();
     QWidget *createGetAltWidget();
     //
-    void XlineEditChanged();
+    void XlineTextChanged();
     void YlineEditChanged();
 };
 

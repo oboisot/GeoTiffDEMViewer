@@ -9,14 +9,14 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    x="0px"
    y="0px"
-   width="600"
-   height="600"
-   viewBox="0 0 600 600"
+   width="96"
+   height="96"
+   viewBox="0 0 96 96"
    preserveAspectRatio="xMidYMid meet"
    version="1.1"
    id="svg873"
-   sodipodi:docname="zoom-out.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="cursor-geolocation.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    inkscape:export-filename="/home/oboisot/Documents/GitHub/GeoTiffDEMViewer/qss/dark/icons/48x48/document-open.png"
    inkscape:export-xdpi="7.6799998"
    inkscape:export-ydpi="7.6799998">
@@ -28,7 +28,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -43,32 +43,24 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1057"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
      id="namedview875"
      showgrid="false"
-     inkscape:zoom="0.81489431"
-     inkscape:cx="-176.31895"
-     inkscape:cy="366.64627"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:zoom="6.5191544"
+     inkscape:cx="51.469563"
+     inkscape:cy="48.744632"
+     inkscape:window-x="1920"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg873"
-     inkscape:snap-object-midpoints="true" />
+     inkscape:snap-object-midpoints="true"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:pagecheckerboard="false" />
   <path
-     style="fill:none;stroke:#d28140;stroke-width:50.00011444;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 345.25256,345.25257 514.74758,514.74744"
-     id="path846-3-6"
-     inkscape:connector-curvature="0" />
-  <circle
-     style="fill:none;fill-opacity:1;stroke:#d28140;stroke-width:79.99993896;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
-     id="path852"
-     cx="230"
-     cy="230"
-     r="160.00003" />
-  <path
-     style="fill:none;stroke:#ffffff;stroke-width:60;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 145.42703,230.00288 H 314.57298"
-     id="path854"
+     style="fill:#d28140;fill-opacity:1;stroke:#d28140;stroke-width:9.50497055;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="m 48,4.7524849 c -16.206708,0.02 -29.109259,13.7825491 -29.152359,27.5447341 -0.0431,13.762187 6.877119,20.029662 10.35938,26.402165 L 48,91.24799 66.792979,58.699384 C 70.27524,52.326887 77.195459,46.059405 77.152359,32.297219 77.109209,18.535034 64.206708,4.7724847 48,4.7524849 Z m 0,7.5448711 A 20.00001,19.999864 0 0 1 68.00001,32.297219 20.00001,19.999864 0 0 1 48,52.297083 20.00001,19.999864 0 0 1 27.99999,32.297219 20.00001,19.999864 0 0 1 48,12.297356 Z"
+     id="path836-3-0"
      inkscape:connector-curvature="0" />
 </svg>
