@@ -37,7 +37,8 @@ QDEMColorMap::QDEMColorMap()
     m_geolocationItemPosition->setStyle(QCPItemTracer::tsNone);
     m_geolocationItemPosition->position->setType(QCPItemPosition::ptPlotCoords);
     m_geolocationItemPosition->position->setAxes(this->xAxis, this->yAxis);
-    m_geolocationItemPosition->position->setCoords(0.0, 0.0);
+    m_geolocationItemPosition->position->setCoords(-std::numeric_limits<double>::max(),
+                                                   -std::numeric_limits<double>::max());
     // geolocation cursor item
     m_geolocationItem = new QCPItemPixmap(this);
     m_geolocationItem->setPixmap(QPixmap(":/qss/dark/icons/svg@96x96/cursor-geolocation.svg").scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -121,8 +122,6 @@ void QDEMColorMap::plotDEM(bool axesEquals)
     });
 }
 
-bool QDEMColorMap::isDEMOpened(){ return m_dem->isOpened(); };
-
 void QDEMColorMap::getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin)
 {
     Xmin = m_Xmin;
@@ -130,7 +129,11 @@ void QDEMColorMap::getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double
     Xmax = m_Xmax;
     Ymin = m_Ymin;
 }
+bool QDEMColorMap::isDEMOpened(){ return m_dem->isOpened(); };
+bool QDEMColorMap::isDEMPlotting() { return m_isPlotting; };
 GeoTiffDEMAxesUnit QDEMColorMap::getDEMAxesUnit() { return m_axesUnit; };
+
+// QCustomPlot styling
 void QDEMColorMap::setBackgroundColor(const QColor &color){ setBackground(QBrush(color));}
 void QDEMColorMap::setAxisRectBackgroundColor(const QColor &color){ this->axisRect()->setBackground(QBrush(color)); }
 void QDEMColorMap::setAxesColor(const QColor &color)
@@ -164,6 +167,11 @@ void QDEMColorMap::setAxesColor(const QColor &color)
 //#################################//
 //##### Interaction functions #####//
 //#################################//
+QString QDEMColorMap::getDEMinfos()
+{
+    return QString::fromStdString( m_dem->getDEMinfos() );
+}
+
 QString QDEMColorMap::getZAtXYasStr(const double &X, const double &Y)
 {
     if ( X >= m_Xmin && X <= m_Xmax && Y >= m_Ymin && Y <= m_Ymax )
@@ -304,12 +312,7 @@ void QDEMColorMap::zoomTo(const int &zoomLevel, const double &tX, const double &
 void QDEMColorMap::setGeolocationCursorPosition(const double &X, const double &Y)
 {
     m_geolocationItemPosition->position->setCoords(X, Y);
-    if (!m_isPlotting) this->replotDEM(false);
-}
-
-void QDEMColorMap::setGeolocationCursorVisible(const bool &visible)
-{
-    m_geolocationItemPosition->setVisible(visible);
+    if ( !m_isPlotting ) this->replotDEM(false);
 }
 
 //#############################//

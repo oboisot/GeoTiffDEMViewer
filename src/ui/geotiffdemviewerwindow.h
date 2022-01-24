@@ -17,9 +17,6 @@ public:
 private slots:
     void openDEMFile();
 
-protected:
-    void closeEvent(QCloseEvent *event) override;
-
 private:
     // Define locale for numbers representation
     const QLocale m_numberLocale=QLocale::C;
@@ -44,7 +41,7 @@ private:
     QWidget *createGetAltWidget();
     //
     void XlineTextChanged();
-    void YlineEditChanged();
+    void YlineTextChanged();
 };
 
 #endif // GEOTIFFDEMVIEWERWINDOW_H

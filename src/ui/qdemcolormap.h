@@ -31,15 +31,17 @@ public:
 
     //
     void openDEM(const fs::path &demPath);
-    void plotDEM(bool axesEquals);
-    bool isDEMOpened();
+    void plotDEM(bool axesEquals);    
     void getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin);
+    bool isDEMOpened();
+    bool isDEMPlotting();
     GeoTiffDEMAxesUnit getDEMAxesUnit();
     // QCustomPlot styling
     void setBackgroundColor(const QColor &color);
     void setAxisRectBackgroundColor(const QColor &color);
     void setAxesColor(const QColor &color);
     // Interaction functions
+    QString getDEMinfos();
     QString getZAtXYasStr(const double &X, const double &Y);
     void resetZoom();
     /*!
@@ -56,8 +58,6 @@ public:
     void zoomOut(const int &zoomStep=1, const double &tX=0.0, const double &tY=0.0);
     void zoomTo(const int &zoomLevel, const double &tX=0.0, const double &tY=0.0);
     void setGeolocationCursorPosition(const double &X, const double &Y);
-    void setGeolocationCursorVisible(const bool &visible);
-
 
 signals:
     void statusChanged(const QString &status, const QDEMStatusColor &color, const int &msec=0);

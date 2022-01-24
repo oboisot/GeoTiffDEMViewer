@@ -25,7 +25,7 @@ double GeoTiffDEM::getdY() const { return m_dY; }
 double GeoTiffDEM::getNoDataValue() const { return m_noDataValue; }
 bool GeoTiffDEM::isOpened() const { return m_datasetOpened; }
 GeoTiffDEMAxesUnit GeoTiffDEM::getAxesUnit() const { return m_axes; }
-void GeoTiffDEM::printPrettySpatialRef() const { m_geoSpatialRef->dumpReadable(); }
+std::string GeoTiffDEM::getDEMinfos() const { return m_demInfos; }
     // setter
 void GeoTiffDEM::initDrivers() { GDALAllRegister(); }
 void GeoTiffDEM::destroyDrivers() { GDALDestroyDriverManager(); }
@@ -295,30 +295,13 @@ void GeoTiffDEM::initializeGeoTiffDEM(fs::path demPath)
     m_demPath = demPath;
     // Opening dataset
     m_dataset = (GDALDataset*) GDALOpen( m_demPath.string().c_str(), GA_ReadOnly );
-    if ( m_dataset == NULL )
+    if ( m_dataset == nullptr )
         throw std::runtime_error("GeoTiffDEM Error: Unable to open\n '" +
                                  m_demPath.string() + "' GeoTiff file.");
     m_datasetOpened = true;
     // Getting raster extensions
     m_rasterXSize = m_dataset->GetRasterXSize();
     m_rasterYSize = m_dataset->GetRasterYSize();
-    // Getting Spatial References
-    m_geoSpatialRef = (OGRSpatialReference*) m_dataset->GetSpatialRef(); // Note GetSpatialRef() returns a const OGRSpatialReference*
-    if ( m_geoSpatialRef == NULL )
-    {
-        std::cerr << "GeoTiffDEM Warning: Projection definition not available." << std::endl;
-        m_axes = Pixels;
-    }
-    else
-    {
-        std::string axis = m_geoSpatialRef->GetAttrValue("AXIS", 0);
-        if ( axis == "Latitude" || axis == "Longitude" )
-            m_axes = LonLat;
-        else if ( axis == "Easting" || axis == "Northing" )
-            m_axes = NorthEast;
-        else
-            m_axes = Pixels;
-    }
     // Getting geotransform
     double geotransform[6];
     if ( m_dataset->GetGeoTransform(geotransform) == CE_None )
@@ -362,6 +345,71 @@ void GeoTiffDEM::initializeGeoTiffDEM(fs::path demPath)
     if ( nYBlockSize > 1 && static_cast<std::size_t>(nXBlockSize) != m_rasterXSize )
         throw std::runtime_error("GeoTiffDEM Error: The file block sizes are not consistent.");
     m_lineBufferSize = static_cast<std::size_t>(nXBlockSize * nYBlockSize);
+    // Getting Spatial References
+    const OGRSpatialReference *spatialRef = m_dataset->GetSpatialRef(); // Note GetSpatialRef() returns a const OGRSpatialReference*;
+    if ( spatialRef == nullptr )
+    {
+        std::cerr << "GeoTiffDEM Warning: Projection definition not available." << std::endl;
+        m_axes = Pixels;
+    }
+    else
+    {
+        std::string axis = spatialRef->GetAttrValue("AXIS", 0);
+        if ( axis == "Latitude" || axis == "Longitude" )
+            m_axes = LonLat;
+        else if ( axis == "Easting" || axis == "Northing" )
+            m_axes = NorthEast;
+        else
+            m_axes = Pixels;
+    }
+    this->createGeoTiffDEMInfos(spatialRef);
+}
+
+void GeoTiffDEM::createGeoTiffDEMInfos(const OGRSpatialReference *spatialRef)
+{
+    // Get Axes units
+    std::string unit{"px"}, axes{"Units: Pixels / Pixels → Altitude [m]"};
+    if ( m_axes == LonLat )
+    {
+        axes = "Longitude [°] / Latitude [°] → Altitude [m]";
+        unit = "°";
+    }
+    else if ( m_axes == NorthEast )
+    {
+        axes = "Northing [m] / Easting [m] → Altitude [m]";
+        unit = "m";
+    }
+    // Get DEM file size in human readable format
+    std::uintmax_t fileSizeBytes = fs::file_size(m_demPath);
+    double fileSizeMetric = static_cast<double>(fileSizeBytes); // Power of two multiples
+    int i = 0;
+    for ( ; fileSizeMetric >= 1000.0 ; fileSizeMetric /= 1000.0, ++i ) {}
+    fileSizeMetric = 0.1 * std::round(fileSizeMetric * 10.0); // Rounding to first decimal
+    const char *fileSizeMetricPrefix = (i == 0) ? "B" : &"BKMGTPEZY"[i];
+    // Get spatialRef as pretty Wkt
+    char *wkt_ptr;
+    if ( spatialRef == nullptr )
+        wkt_ptr = nullptr;
+    else
+        OGRErr er = spatialRef->exportToPrettyWkt(&wkt_ptr);
+    // Fill m_demInfos string
+    m_demInfos =  "GeoTiff DEM Infos:\n";
+    m_demInfos += "------------------\n";
+    m_demInfos += fmt::format("  * File name:                     {}\n", m_demPath.filename().string());
+    m_demInfos += fmt::format("  * File size:                     {:.1f} {}B ({} bytes)\n", fileSizeMetric, fileSizeMetricPrefix[0], fileSizeBytes);
+    m_demInfos += "  * Raster infos:\n";
+    m_demInfos += fmt::format("    → Number of bands:             {}\n", 1);
+    m_demInfos += fmt::format("    → Size (width x height):       ({} x {}) pixels\n", m_rasterXSize, m_rasterYSize);
+    m_demInfos += fmt::format("    → Pixels data type:            {}\n", GDALGetDataTypeName(m_dataType));
+    m_demInfos += fmt::format("    → Pixels color interpretation: {}\n", GDALGetColorInterpretationName(m_rasterBand->GetColorInterpretation()));
+    m_demInfos += "  * Geographic infos:\n";
+    m_demInfos += fmt::format("    → Axes:                        {}\n", axes);
+    m_demInfos += fmt::format("    → Upper-Left corner:           ({}{}, {}{})\n", m_Xmin, unit, m_Ymax, unit);
+    m_demInfos += fmt::format("    → Lower-right corner:          ({}{}, {}{})\n", m_Xmax, unit, m_Ymin, unit);
+    m_demInfos += fmt::format("    → Pixels sizes:                ({}{}, {}{})\n", m_dX, unit, m_dY, unit);
+    m_demInfos += "  * Coordinate Reference System (CRS):\n";
+    m_demInfos += fmt::format("{}", (wkt_ptr == nullptr) ? "No CRS available..." : wkt_ptr);
+    delete wkt_ptr;
 }
 
 //################################################//

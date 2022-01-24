@@ -14,6 +14,12 @@ set(CMAKE_AUTORCC ON)
 # Instruct CMake to run uic automatically when needed.
 set(CMAKE_AUTOUIC ON)
 
+# Set MSYS2 path
+if (WIN32)
+#    set(MSYS2_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal (MSVCRT)
+    set(MSYS2_PATH "D:/oboisot/msys64/ucrt64") # MSYS2 mingw-w64-x86_64-gdal (UCRT)
+endif()
+
 ###################
 # SETTING LIB/EXE #
 ###################
@@ -24,7 +30,7 @@ set(GTIFFDEMVIEWER_HEADERS # GeoTiff DEM
                            # UI
                            src/ui/geotiffdemviewerwindow.h
                            src/ui/qdemcolormap.h)
-
+set(FMT_HEADERS fmt/core.h fmt/format.h fmt/format-inl.h) # {fmt} library
 # Sources list
 set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            src/geotiffdem.cpp
@@ -36,8 +42,9 @@ set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            GeoTiffDEMViewer.cpp
                            # Resources files
                            GeoTiffDEMViewer.qrc)
-
-add_executable(${PROJECT_NAME} ${GTIFFDEMVIEWER_HEADERS} ${GTIFFDEMVIEWER_SOURCES})
+set(FMT_SOURCES src/fmt/format.cc)  # {fmt} library
+add_executable(${PROJECT_NAME} ${GTIFFDEMVIEWER_HEADERS} ${GTIFFDEMVIEWER_SOURCES}
+                               ${FMT_HEADERS} ${FMT_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX # Needed for header files only
                                                  VERSION ${PROJECT_VERSION})
 
@@ -46,7 +53,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX # Needed fo
 #########################################
 # UI sources
 target_include_directories(${PROJECT_NAME} PUBLIC src/ui)
-
 # Shared libraries directories
 target_include_directories(${PROJECT_NAME} PUBLIC libs/qcustomplot) # QCustomPlot
 
@@ -55,8 +61,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC libs/qcustomplot) # QCustomPlo
 ################
 # Ajout du path 'anaconda' pour la recherche de librairie pour CMake
 if (WIN32)
-#    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal (MSVCRT)
-    set(GDAL_CUSTOM_PATH "D:/oboisot/msys64/ucrt64") # MSYS2 mingw-w64-x86_64-gdal (UCRT)
+    set(GDAL_CUSTOM_PATH MSYS2_PATH)
 else()
     set(GDAL_CUSTOM_PATH "/home/oboisot/anaconda3") # Anaconda3 gdal
 endif()
@@ -120,7 +125,9 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    ${QCUSTOMPLOT_SODIR} ${CMAKE_BINARY_DIR})
 
 
-message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+###########
+# INSTALL #
+###########
 if (WIN32)
     set(MY_DEPENDENCY_PATHS "${GDAL_CUSTOM_PATH}/bin" "D:/oboisot/Qt/6.2.2/mingw_64/bin")
 else()

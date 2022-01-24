@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <filesystem>
 #include <limits>
+#include "fmt/format.h"
 #include "gdal_priv.h"
 #include "ogr_spatialref.h" // for OGRSpatialReference
 
@@ -54,7 +55,7 @@ public:
     double getNoDataValue() const;
     bool isOpened() const;
     GeoTiffDEMAxesUnit getAxesUnit() const;
-    void printPrettySpatialRef() const;
+    std::string getDEMinfos() const;
         // setter
     void initDrivers();
     void destroyDrivers();
@@ -155,8 +156,8 @@ protected:
     fs::path            m_demPath;        // GeoTiff data path
     GDALDataset         *m_dataset;       // GeoTiff GDAL dataset
     GDALRasterBand      *m_rasterBand;    // GeoTiff Raster band
-    OGRSpatialReference *m_geoSpatialRef; // GeoTiff Spatial Reference
     GeoTiffDEMAxesUnit  m_axes;           // GeoTiff axes unit
+    std::string         m_demInfos;       // GeoTiff DEM infos
         // Check state of opened dataset
     bool m_datasetOpened = false;
         // Size of the dataset
@@ -175,6 +176,7 @@ protected:
 private:
     // ============== PRIVATE CLASS METHODS ==============
     void initializeGeoTiffDEM(fs::path demPath);
+    void createGeoTiffDEMInfos(const OGRSpatialReference *spatialRef);
     //################################################//
     double **interpNNFromPixelsBoundingBox(const double &pX0, const double &pY0,  // Upper-left corner
                                            const double &pX1, const double &pY1,  // Lower-right corner

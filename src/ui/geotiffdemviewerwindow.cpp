@@ -15,7 +15,7 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     //
     this->setMouseTracking(true);
     this->setGeometry(600, 180, 720, 720);
-    this->setMinimumSize(600, 600);
+    this->setMinimumSize(720, 720);
     this->setWindowTitle("GeoTiffDEM Viewer");
     //
     QFile file(":/qss/dark/dark.qss");
@@ -31,20 +31,6 @@ GeoTiffDEMViewerWindow::~GeoTiffDEMViewerWindow()
 }
 
 //#######################################//
-
-
-/**********
- * EVENTS *
- **********/
-void GeoTiffDEMViewerWindow::closeEvent(QCloseEvent *event)
-{
-    if (QMessageBox::Yes != QMessageBox::question(this, "Close Confirmation?",
-        "Are you sure you want to exit?", QMessageBox::Yes | QMessageBox::No))
-    {
-        event->ignore();
-    }
-}
-
 /*****************
  * PRIVATE SLOTS *
  *****************/
@@ -190,6 +176,11 @@ void GeoTiffDEMViewerWindow::createToolBar()
     infoAction->setShortcut(QKeySequence(tr("Ctrl+I")));
     infoAction->setToolTip(QString("DEM informations (Ctrl+I)"));
     infoAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/dialog-information.svg"));
+    connect(infoAction, &QAction::triggered, this, [&](){
+        QMessageBox msgBox;
+        msgBox.setText(m_demCmap->getDEMinfos());
+        msgBox.exec();
+    });
     toolBar->addAction(infoAction);
     toolBar->addSeparator();
     // Get altitude Widget
@@ -337,7 +328,7 @@ QWidget *GeoTiffDEMViewerWindow::createGetAltWidget()
 
 void GeoTiffDEMViewerWindow::XlineTextChanged()
 {
-    if ( m_demCmap->isDEMOpened() )
+    if ( m_demCmap->isDEMOpened() && !m_demCmap->isDEMPlotting() )
     {
         if ( m_Xline->hasAcceptableInput() )
         {
@@ -354,7 +345,7 @@ void GeoTiffDEMViewerWindow::XlineTextChanged()
 
 void GeoTiffDEMViewerWindow::YlineTextChanged()
 {
-    if ( m_demCmap->isDEMOpened() )
+    if ( m_demCmap->isDEMOpened() && !m_demCmap->isDEMPlotting() )
     {
         if ( m_Yline->hasAcceptableInput() )
         {
