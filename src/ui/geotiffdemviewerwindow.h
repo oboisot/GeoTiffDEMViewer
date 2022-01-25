@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include "qdemcolormap.h"
+#include "infosdialog.h"
 
 class GeoTiffDEMViewerWindow : public QMainWindow
 {
@@ -32,12 +33,15 @@ private:
     QLabel *m_statusLabel, *m_coordLabel, *m_zoomLabel;
     QProgressBar *m_progressBar;
     QTimer *m_statusLabelTimer;
+    // Infos dialog
+    InfosDialog *m_infosDialog;
     //
     void createQDEMColorMap();
     void createToolBar();    
     void createStatusBar();
     void createCentralWidget();
-    void createShortcuts();
+    void createInfosDialog();
+    void createShortcuts();    
     QWidget *createGetAltWidget();
     //
     void XlineTextChanged();

@@ -11,15 +11,18 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     // Central Widget
     this->createCentralWidget();
     //
+    this->createInfosDialog();
+    //
     this->createShortcuts();
     //
     this->setMouseTracking(true);
     this->setGeometry(600, 180, 720, 720);
     this->setMinimumSize(720, 720);
     this->setWindowTitle("GeoTiffDEM Viewer");
+
     //
     QFile file(":/qss/dark/dark.qss");
-    file.open(QFile::Text |QFile::ReadOnly);
+    file.open(QFile::Text|QFile::ReadOnly);
     QString styleSheet = QString::fromUtf8(file.readAll());
     qApp->setStyleSheet(styleSheet);
 }
@@ -100,7 +103,8 @@ void GeoTiffDEMViewerWindow::createQDEMColorMap()
     // QCustomPlot colors and style
     m_demCmap->setBackgroundColor(QColor(25, 25, 25));
     m_demCmap->setAxisRectBackgroundColor(QColor(80, 80, 80));
-    m_demCmap->setAxesColor(QColor(169, 183, 198));
+//    m_demCmap->setAxesColor(QColor(169, 183, 198));
+    m_demCmap->setAxesColor(QColor(255, 255, 255));
     // Signals and slots
     connect(m_demCmap, &QDEMColorMap::cursorChanged, this, [=](const QCursor &cursor){ this->setCursor(cursor); });
 }
@@ -143,7 +147,7 @@ void GeoTiffDEMViewerWindow::createToolBar()
     zoomOutAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Minus));
     zoomOutAction->setToolTip(QString("Zoom out (%1)\n"
                                       "Use: mouse right double-click for zoom out X2 at the click position\n"
-                                      "Use Ctrl+<0-9> to go to the given zoom level").arg(
+                                      "Use: Ctrl+<0-9> to go to the given zoom level").arg(
                                   QKeySequence(Qt::CTRL | Qt::Key_Minus).toString()));
     zoomOutAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/zoom-out.svg"));
     connect(zoomOutAction, &QAction::triggered, this, [=](){ m_demCmap->zoomOut(); });
@@ -177,9 +181,9 @@ void GeoTiffDEMViewerWindow::createToolBar()
     infoAction->setToolTip(QString("DEM informations (Ctrl+I)"));
     infoAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/dialog-information.svg"));
     connect(infoAction, &QAction::triggered, this, [&](){
-        QMessageBox msgBox;
-        msgBox.setText(m_demCmap->getDEMinfos());
-        msgBox.exec();
+        QString infos(m_demCmap->getDEMinfos());
+        m_infosDialog->setText((infos == "") ? "No DEM opened." : infos);
+        m_infosDialog->open();
     });
     toolBar->addAction(infoAction);
     toolBar->addSeparator();
@@ -191,7 +195,7 @@ void GeoTiffDEMViewerWindow::createToolBar()
     closeAction->setShortcut(QKeySequence::Quit);
     closeAction->setToolTip(QString("Quit application (%1)").arg(QKeySequence(QKeySequence::Quit).toString()));
     closeAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/application-exit.svg"));
-    connect(closeAction, &QAction::triggered, this, [&](){ this->close(); });
+    connect(closeAction, &QAction::triggered, this, [&](){ if (!m_demCmap->isDEMPlotting()) this->close(); });
     toolBar->addAction(closeAction);
     toolBar->addSeparator();
 }
@@ -219,8 +223,7 @@ void GeoTiffDEMViewerWindow::createStatusBar()
         default:
             m_statusLabel->setStyleSheet("QLabel { color : black; }");break;
         }
-        if ( msec > 0 )
-            m_statusLabelTimer->start(msec);
+        if ( msec > 0 ) m_statusLabelTimer->start(msec);
     });
     connect(m_statusLabelTimer, &QTimer::timeout, this, [=](){ m_statusLabel->setText(""); });
     //
@@ -243,17 +246,13 @@ void GeoTiffDEMViewerWindow::createStatusBar()
 
 void GeoTiffDEMViewerWindow::createCentralWidget()
 {
-//    QGridLayout *layout = new QGridLayout();
-//    layout->setContentsMargins(0, 0, 0, 0);
-//    QWidget *leftWidget = new QWidget();
-//    layout->addWidget(leftWidget, 0, 0);
-//    layout->addWidget(m_demCmap, 0, 1);
-//    layout->setColumnStretch(0, 1);
-//    layout->setColumnStretch(1, 3);
-//    QWidget* centralWidget = new QWidget();
-//    centralWidget->setLayout(layout);
-//    setCentralWidget(centralWidget);
     setCentralWidget(m_demCmap);
+}
+
+void GeoTiffDEMViewerWindow::createInfosDialog()
+{
+    m_infosDialog = new InfosDialog(this);
+    m_infosDialog->setMinimumSize(720, 600);
 }
 
 void GeoTiffDEMViewerWindow::createShortcuts()
@@ -309,7 +308,9 @@ QWidget *GeoTiffDEMViewerWindow::createGetAltWidget()
     m_Yline->setMaximumWidth(100);
     m_Yline->setDisabled(true);
     connect(m_Xline, &QLineEdit::textChanged, this, [=](){ this->XlineTextChanged(); });
+    connect(m_Xline, &QLineEdit::returnPressed, this, [=](){ this->XlineTextChanged(); });
     connect(m_Yline, &QLineEdit::textChanged, this, [=](){ this->YlineTextChanged(); });
+    connect(m_Yline, &QLineEdit::returnPressed, this, [=](){ this->YlineTextChanged(); });
         // Layout
     QHBoxLayout *layout = new QHBoxLayout();
     layout->addWidget(m_Xlabel);

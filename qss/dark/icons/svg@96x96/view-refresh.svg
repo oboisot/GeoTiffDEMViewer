@@ -9,14 +9,14 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    x="0px"
    y="0px"
-   width="600"
-   height="600"
-   viewBox="0 0 600 600"
+   width="96"
+   height="96"
+   viewBox="0 0 96 96"
    preserveAspectRatio="xMidYMid meet"
    version="1.1"
    id="svg873"
-   sodipodi:docname="application-close.svg"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="view-refresh.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    inkscape:export-filename="/home/oboisot/Documents/GitHub/GeoTiffDEMViewer/qss/dark/icons/48x48/document-open.png"
    inkscape:export-xdpi="7.6799998"
    inkscape:export-ydpi="7.6799998">
@@ -33,7 +33,22 @@
     </rdf:RDF>
   </metadata>
   <defs
-     id="defs877" />
+     id="defs877">
+    <marker
+       inkscape:stockid="TriangleOutL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleOutL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path954"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#d28140;stroke-width:1pt;stroke-opacity:1;fill:#d28140;fill-opacity:1"
+         transform="scale(0.8)" />
+    </marker>
+  </defs>
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -44,25 +59,34 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1920"
-     inkscape:window-height="1043"
+     inkscape:window-height="1057"
      id="namedview875"
      showgrid="false"
-     inkscape:zoom="0.72030885"
-     inkscape:cx="230.27889"
-     inkscape:cy="312.44814"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
+     inkscape:zoom="3.7083335"
+     inkscape:cx="45.190586"
+     inkscape:cy="10.470739"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg873"
-     inkscape:snap-object-midpoints="true" />
+     inkscape:snap-object-midpoints="true"
+     showguides="false" />
   <path
-     style="fill:none;stroke:#d28140;stroke-width:59.99985886;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 130.30294,469.69706 469.69706,130.30293"
-     id="path846-3"
-     inkscape:connector-curvature="0" />
+     style="opacity:1;fill:none;fill-opacity:1;stroke:#d28140;stroke-width:10.00044155;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     id="path5453"
+     sodipodi:type="arc"
+     sodipodi:cx="48.000099"
+     sodipodi:cy="47.99654"
+     sodipodi:rx="37.499687"
+     sodipodi:ry="37.501881"
+     sodipodi:start="0"
+     sodipodi:end="5.7595865"
+     d="M 85.499786,47.99654 A 37.499687,37.501881 0 0 1 52.894791,85.177587 37.499687,37.501881 0 0 1 11.778183,57.702742 37.499687,37.501881 0 0 1 33.649589,13.34932 37.499687,37.501881 0 0 1 80.47578,29.245599"
+     sodipodi:open="true" />
   <path
-     style="fill:none;stroke:#d28140;stroke-width:59.99985886;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 130.30293,130.30293 469.69707,469.69706"
-     id="path846-3-6"
-     inkscape:connector-curvature="0" />
+     style="fill:#d28140;fill-opacity:1;stroke:none;stroke-width:0.3125px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 60.498955,38.5 h 30 V 8.500001 Z"
+     id="path5455"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cccc" />
 </svg>

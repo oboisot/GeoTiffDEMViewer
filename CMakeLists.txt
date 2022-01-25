@@ -29,7 +29,8 @@ set(GTIFFDEMVIEWER_HEADERS # GeoTiff DEM
                            src/qgeotiffdem.h
                            # UI
                            src/ui/geotiffdemviewerwindow.h
-                           src/ui/qdemcolormap.h)
+                           src/ui/qdemcolormap.h
+                           src/ui/infosdialog.h)
 set(FMT_HEADERS fmt/core.h fmt/format.h fmt/format-inl.h) # {fmt} library
 # Sources list
 set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
@@ -38,6 +39,7 @@ set(GTIFFDEMVIEWER_SOURCES # GeoTiff DEM
                            # UI
                            src/ui/geotiffdemviewerwindow.cpp
                            src/ui/qdemcolormap.cpp
+                           src/ui/infosdialog.cpp
                            # Main
                            GeoTiffDEMViewer.cpp
                            # Resources files

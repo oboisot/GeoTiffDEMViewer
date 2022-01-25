@@ -157,7 +157,7 @@ protected:
     GDALDataset         *m_dataset;       // GeoTiff GDAL dataset
     GDALRasterBand      *m_rasterBand;    // GeoTiff Raster band
     GeoTiffDEMAxesUnit  m_axes;           // GeoTiff axes unit
-    std::string         m_demInfos;       // GeoTiff DEM infos
+    std::string         m_demInfos = "";  // GeoTiff DEM infos
         // Check state of opened dataset
     bool m_datasetOpened = false;
         // Size of the dataset

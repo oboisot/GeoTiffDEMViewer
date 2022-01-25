@@ -1,5 +1,5 @@
 QMainWindow {
-	background-color:#191919;
+	background-color: #191919;
 }
 
 QToolBar {
@@ -10,7 +10,6 @@ QToolBar {
 }
 
 QToolBar::separator {
-	/* background-color: #d28140; */
 	background-color: #bebebe;
 	width: 1px;
 	min-height: 40px;
@@ -26,10 +25,6 @@ QStatusBar::item {
 	border: none;
 }
 
-/* QStatusBar QLabel {
-    border: 0.5px solid #ffffff;
-} */
-
 QProgressBar {
 	text-align: center;
     color: #eeeeee;
@@ -40,6 +35,7 @@ QProgressBar {
     margin-top: 2px;
     margin-bottom: 2px;
 }
+
 QProgressBar::chunk {
     background-color: #d28140;
 	border-radius: 0px;
@@ -50,14 +46,14 @@ QDialog {
 }
 
 QLabel {
-	color: #a9b7c6;
+	color: #ffffff;
 }
 
 QPushButton, QToolButton, QPushButton::default, QToolButton::default {
 	min-height: 40px;
 	min-width: 40px;
 	border: 1px transparent;
-	color: #a9b7c6;
+	color: #ffffff;
 	background-color: #191919;
 }
 
@@ -70,11 +66,10 @@ QPushButton:hover, QToolButton:hover {
 QPushButton:pressed, QToolButton:pressed {
 	border: 2px solid #d28140;
 	color: #ffffff;
-	/* background-color: #191919; */
 	background-color: rgba(100, 100, 100, 120);
 }
 
-QPushButton:disabled{
+QPushButton:disabled {
 	border-style: solid;
 	border-top-color: transparent;
 	border-right-color: transparent;
@@ -88,15 +83,31 @@ QPushButton:disabled{
 }
 
 QLineEdit {
-	color: #a9b7c6;
+	color: #ffffff;
 	border: 1px solid gray;
     border-radius: 3px;
     padding: 2px;
     background-color: #191919;
-    selection-background-color: rgba(255, 255, 255, 0.5);
+    selection-background-color: rgba(255, 255, 255, 128);
 }
 
 QLineEdit:focus {
-	background-color: rgba(100, 100, 100, 120);
+	background-color: #505050;
 	border: 1px solid #d28140;
+}
+
+QPlainTextEdit {
+	color: #ffffff;
+	/* background-color: #505050; */
+	background-color: #191919;
+	selection-background-color: rgba(255, 255, 255, 128);
+	border: 1px solid gray;
+}
+
+QToolTip {
+	color: #a9b7c6;
+	border: 1px solid #d28140;
+    border-radius: 0px;
+    padding: 2px;
+	background-color: #191919;
 }
