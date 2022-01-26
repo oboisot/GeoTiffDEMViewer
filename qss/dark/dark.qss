@@ -69,6 +69,12 @@ QPushButton:pressed, QToolButton:pressed {
 	background-color: rgba(100, 100, 100, 120);
 }
 
+/* QAction:checked {
+	border: 2px solid #d28140;
+	color: #ffffff;
+	background-color: rgba(100, 100, 100, 120);
+} */
+
 QPushButton:disabled {
 	border-style: solid;
 	border-top-color: transparent;
@@ -84,7 +90,7 @@ QPushButton:disabled {
 
 QLineEdit {
 	color: #ffffff;
-	border: 1px solid gray;
+	border: 1px solid #bebebe;
     border-radius: 3px;
     padding: 2px;
     background-color: #191919;
@@ -98,10 +104,9 @@ QLineEdit:focus {
 
 QPlainTextEdit {
 	color: #ffffff;
-	/* background-color: #505050; */
-	background-color: #191919;
+	background-color: #000000;
 	selection-background-color: rgba(255, 255, 255, 128);
-	border: 1px solid gray;
+	border: 1px solid #bebebe;
 }
 
 QToolTip {
@@ -110,4 +115,33 @@ QToolTip {
     border-radius: 0px;
     padding: 2px;
 	background-color: #191919;
+}
+
+QScrollBar:vertical {
+	border-left: 1px solid #bebebe;
+	background: #191919;
+	width: 15px;
+	margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+	background: rgba(210, 129, 64, 200);
+	border: 1px solid #191919;
+}
+
+QScrollBar::handle:vertical:hover {
+	background: #d28140;
+	border: 1px solid #191919;
+}
+
+QScrollBar::add-line:vertical {
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+	height: 0px;
+}
+
+QScrollBar::sub-line:vertical {
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+	height: 0px;
 }

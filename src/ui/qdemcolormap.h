@@ -29,18 +29,18 @@ public:
     explicit QDEMColorMap();
     ~QDEMColorMap();
 
-    //
-    void openDEM(const fs::path &demPath);
-    void plotDEM(bool axesEquals);    
-    void getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin);
-    bool isDEMOpened();
-    bool isDEMPlotting();
-    GeoTiffDEMAxesUnit getDEMAxesUnit();
     // QCustomPlot styling
     void setBackgroundColor(const QColor &color);
     void setAxisRectBackgroundColor(const QColor &color);
     void setAxesColor(const QColor &color);
+    //
+    void openDEM(const fs::path &demPath);
+    void plotDEM(bool axesEquals);
+    void getDEMExtent(double &Xmin, double &Ymax, double &Xmax, double &Ymin);
+    bool isDEMOpened();
+    bool isDEMPlotting();     
     // Interaction functions
+    GeoTiffDEMAxesUnit getDEMAxesUnit();
     QString getDEMinfos();
     QString getZAtXYasStr(const double &X, const double &Y);
     void resetZoom();
@@ -58,6 +58,7 @@ public:
     void zoomOut(const int &zoomStep=1, const double &tX=0.0, const double &tY=0.0);
     void zoomTo(const int &zoomLevel, const double &tX=0.0, const double &tY=0.0);
     void setGeolocationCursorPosition(const double &X, const double &Y);
+    void setGeolocationCursorVisibility(const bool &visible);
 
 signals:
     void statusChanged(const QString &status, const QDEMStatusColor &color, const int &msec=0);
@@ -84,7 +85,7 @@ private:
     GeoTiffDEMinterp m_interp;
     int m_zoomLevel, m_zoomLevelMax, m_zoomInterpThreshold;
     double m_zoomFactor, m_betaIn, m_betaOut;
-    bool m_isPlotting, m_isMousePressedInCmapBBox, m_selectRectEnabled;
+    bool m_isPlotting, m_isMousePressedInCmapBBox, m_selectionRectEnabled;
     //
     QCPColorMap *m_cmap;
     QCPColorScale *m_cscale;
@@ -99,6 +100,8 @@ private:
     //
     QCPItemTracer *m_geolocationItemPosition;
     QCPItemPixmap *m_geolocationItem;
+    // Selection rect
+    QCPSelectionRect *m_selectionRect;
     // Private methods
     void initBufSizeFromScreenSize();
     void replotDEM(bool axesEquals);

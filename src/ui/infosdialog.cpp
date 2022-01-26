@@ -18,6 +18,7 @@ InfosDialog::InfosDialog(QWidget *parent) : QDialog(parent)
     layout->setAlignment(closeButton, Qt::AlignHCenter);
     // QDialog customization
     this->setSizeGripEnabled(true);
+    this->setWindowTitle("GeoTiff DEM infos");
 }
 
 InfosDialog::~InfosDialog() {}

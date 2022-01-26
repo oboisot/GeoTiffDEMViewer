@@ -9,7 +9,7 @@ QDEMColorMap::QDEMColorMap()
       m_interp(GeoTiffDEMinterp::Nearest),
       m_zoomLevel(0), m_zoomLevelMax(10), m_zoomInterpThreshold(8),
       m_zoomFactor(0.0), m_betaIn(0.0), m_betaOut(0.0),
-      m_isPlotting(false), m_isMousePressedInCmapBBox(false), m_selectRectEnabled(false)
+      m_isPlotting(false), m_isMousePressedInCmapBBox(false), m_selectionRectEnabled(false)
 {
     this->initBufSizeFromScreenSize(); // Initialize m_bufXsize and m_bufYsize from screen(s) size
     //
@@ -46,12 +46,48 @@ QDEMColorMap::QDEMColorMap()
     m_geolocationItem->topLeft->setType(QCPItemPosition::ptAbsolute);
     m_geolocationItem->topLeft->setParentAnchor(m_geolocationItemPosition->position);
     m_geolocationItem->topLeft->setCoords(-14, -28);
+    // Selection rect
+    m_selectionRect = new QCPSelectionRect(this);
+    m_selectionRect->setPen(QPen(QColor(255, 0, 0)));
+    m_selectionRect->setBrush(Qt::NoBrush);
+    m_selectionRect->setVisible(false);
 }
 
 // Destructor
 QDEMColorMap::~QDEMColorMap()
 {
     delete m_dem;
+}
+
+// QCustomPlot styling
+void QDEMColorMap::setBackgroundColor(const QColor &color){ this->setBackground(QBrush(color));}
+void QDEMColorMap::setAxisRectBackgroundColor(const QColor &color){ this->axisRect()->setBackground(QBrush(color)); }
+void QDEMColorMap::setAxesColor(const QColor &color)
+{
+    // X axes
+    this->xAxis->setLabelColor(color);
+    this->xAxis->setTickLabelColor(color);
+    this->xAxis->setTickPen(QPen(color));
+    this->xAxis->setSubTickPen(QPen(color));
+    this->xAxis->setBasePen(QPen(color));
+    this->xAxis2->setTickPen(QPen(color));
+    this->xAxis2->setSubTickPen(QPen(color));
+    this->xAxis2->setBasePen(QPen(color));
+    // Y axes
+    this->yAxis->setLabelColor(color);
+    this->yAxis->setTickLabelColor(color);
+    this->yAxis->setTickPen(QPen(color));
+    this->yAxis->setSubTickPen(QPen(color));
+    this->yAxis->setBasePen(QPen(color));
+    this->yAxis2->setTickPen(QPen(color));
+    this->yAxis2->setSubTickPen(QPen(color));
+    this->yAxis2->setBasePen(QPen(color));
+    // ColorScale color
+    m_cscale->axis()->setTickLabelColor(color);
+    m_cscale->axis()->setLabelColor(color);
+    m_cscale->axis()->setTickPen(QPen(color));
+    m_cscale->axis()->setSubTickPen(QPen(color));
+    m_cscale->axis()->setBasePen(QPen(color));
 }
 
 void QDEMColorMap::openDEM(const fs::path &demPath)
@@ -72,7 +108,7 @@ void QDEMColorMap::openDEM(const fs::path &demPath)
             this->xAxis->setLabel("Longitude [°]");
             this->yAxis->setLabel("Latitude [°]");
         }
-        else if ( m_axesUnit == GeoTiffDEMAxesUnit::NorthEast )
+        else if ( m_axesUnit == GeoTiffDEMAxesUnit::EastNorth )
         {
             this->xAxis->setLabel("Easting [m]");
             this->yAxis->setLabel("Northing [m]");
@@ -108,7 +144,7 @@ void QDEMColorMap::plotDEM(bool axesEquals)
         m_cmap->setDataRange(QCPRange(m_zbufZmin, m_zbufZmax));
         m_cmap->rescaleDataRange(true);
         this->replotDEM(axesEquals);
-        if ( m_selectRectEnabled )
+        if ( m_selectionRectEnabled )
         {
             this->setCursor(Qt::CrossCursor);
             emit this->cursorChanged(Qt::CrossCursor);
@@ -133,40 +169,9 @@ bool QDEMColorMap::isDEMOpened(){ return m_dem->isOpened(); };
 bool QDEMColorMap::isDEMPlotting() { return m_isPlotting; };
 GeoTiffDEMAxesUnit QDEMColorMap::getDEMAxesUnit() { return m_axesUnit; };
 
-// QCustomPlot styling
-void QDEMColorMap::setBackgroundColor(const QColor &color){ setBackground(QBrush(color));}
-void QDEMColorMap::setAxisRectBackgroundColor(const QColor &color){ this->axisRect()->setBackground(QBrush(color)); }
-void QDEMColorMap::setAxesColor(const QColor &color)
-{
-    // X axes
-    this->xAxis->setLabelColor(color);
-    this->xAxis->setTickLabelColor(color);
-    this->xAxis->setTickPen(QPen(color));
-    this->xAxis->setSubTickPen(QPen(color));
-    this->xAxis->setBasePen(QPen(color));
-    this->xAxis2->setTickPen(QPen(color));
-    this->xAxis2->setSubTickPen(QPen(color));
-    this->xAxis2->setBasePen(QPen(color));
-    // Y axes
-    this->yAxis->setLabelColor(color);
-    this->yAxis->setTickLabelColor(color);
-    this->yAxis->setTickPen(QPen(color));
-    this->yAxis->setSubTickPen(QPen(color));
-    this->yAxis->setBasePen(QPen(color));
-    this->yAxis2->setTickPen(QPen(color));
-    this->yAxis2->setSubTickPen(QPen(color));
-    this->yAxis2->setBasePen(QPen(color));
-    // ColorScale color
-    m_cscale->axis()->setTickLabelColor(color);
-    m_cscale->axis()->setLabelColor(color);
-    m_cscale->axis()->setTickPen(QPen(color));
-    m_cscale->axis()->setSubTickPen(QPen(color));
-    m_cscale->axis()->setBasePen(QPen(color));
-}
-
-//#################################//
-//##### Interaction functions #####//
-//#################################//
+/*************************
+ * Interaction functions *
+ *************************/
 QString QDEMColorMap::getDEMinfos()
 {
     return QString::fromStdString( m_dem->getDEMinfos() );
@@ -315,9 +320,14 @@ void QDEMColorMap::setGeolocationCursorPosition(const double &X, const double &Y
     if ( !m_isPlotting ) this->replotDEM(false);
 }
 
-//#############################//
-//##### Private functions #####//
-//#############################//
+void QDEMColorMap::setGeolocationCursorVisibility(const bool &visible)
+{
+    m_geolocationItem->setVisible(visible);
+}
+
+/*********************
+ * Private functions *
+ *********************/
 void QDEMColorMap::initBufSizeFromScreenSize()
 {
     QList<QScreen*> screens = QGuiApplication::screens();
@@ -346,8 +356,9 @@ void QDEMColorMap::replotDEM(bool axesEquals)
 {
     if ( axesEquals )
     {
-        this->rescaleAxes();
         double X0, Y1, X1, Y0, dX, dY;
+        this->rescaleAxes();
+        replot(QCustomPlot::rpQueuedRefresh); // allows to actualize axisRect correctly. NOTE: rpQueuedRefresh: Replots immediately, but queues the widget repaint, by calling QWidget::update() after the replot. This way multiple redundant widget repaints can be avoided.
         this->getCmapBBox(X0, Y1, X1, Y0);
         dX = (X1 - X0) / this->axisRect()->width(); // Handles natural bounds and window size.
         dY = (Y1 - Y0) / this->axisRect()->height();
@@ -356,7 +367,7 @@ void QDEMColorMap::replotDEM(bool axesEquals)
         else
             this->yAxis->setScaleRatio(this->xAxis, 1.0);
     }
-    replot(QCustomPlot::rpQueuedReplot); // Note: rpQueuedReplot is preferred over rpQueuedRefresh for initialisation of the first plotting.
+    replot(QCustomPlot::rpQueuedReplot); // Note: rpQueuedReplot: Queues the entire replot for the next event loop iteration. This way multiple redundant replots can be avoided. The actual replot is then done with rpRefreshHint priority.
 }
 
 void QDEMColorMap::getCmapBBox(double &X0, double &Y1, double &X1, double &Y0) // Upper-left, lower-right corners
@@ -436,24 +447,20 @@ void QDEMColorMap::computeZoomOutFactors(const int &zoomStep, double &zf, double
     tf = 2.0 * zf; // Translation scale factor
 }
 
-///////////
-// SLOTS //
-///////////
+/*********
+ * SLOTS *
+ *********/
 void QDEMColorMap::onProgressChanged(const double &progress){ emit this->progressChanged(progress); }
 
-////////////
-// EVENTS //
-////////////
+/*********
+ * EVENTS *
+ *********/
 void QDEMColorMap::resizeEvent(QResizeEvent *event)
 {
     QCustomPlot::resizeEvent(event);
     if ( !m_isPlotting )
-    {
         if ( m_dem->isOpened() )
-        {
             this->replotDEM(true);
-        }
-    }
 }
 
 void QDEMColorMap::mousePressEvent(QMouseEvent *event)
@@ -575,22 +582,22 @@ void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
                 if ( m_cmap->data()->keyRange().contains(X) && m_cmap->data()->valueRange().contains(Y) ) // cursor is in the data rect
                 {
                     if ( Z != Z ) // nodata case
-                        Zstr = QString("-");
+                        Zstr = QString("n/a");
                     else
                         Zstr = QString("%1m").arg(QString::number(Z, 'f', 3));
                 }
                 else // in the cmap rect but not in the data rect -> like 'nodata'
-                    Zstr = QString("-");
+                    Zstr = QString("n/a");
                 switch ( m_axesUnit )
                 {
                 case LonLat:
-                    value = QString("lon: %1°, lat: %2°, alt: %3").arg(Xstr, Ystr, Zstr);break;
-                case NorthEast:
-                    value = QString("X: %1m, Y: %2m, alt: %3").arg(Xstr, Ystr, Zstr);break;
+                    value = QString("Lon: %1° Lat: %2° → Alt: %3").arg(Xstr, Ystr, Zstr);break;
+                case EastNorth:
+                    value = QString("East: %1m North: %2m → Alt: %3").arg(Xstr, Ystr, Zstr);break;
                 case Pixels:
-                    value = QString("X: %1px, Y: %2px, alt: %3").arg(Xstr, Ystr, Zstr);break;
+                    value = QString("X: %1px Y: %2px → Alt: %3").arg(Xstr, Ystr, Zstr);break;
                 default:
-                    value = QString("X: %1px, Y: %2px, alt: %3").arg(Xstr, Ystr, Zstr);break;
+                    value = QString("X: %1px Y: %2px → Alt: %3").arg(Xstr, Ystr, Zstr);break;
                 }
                 emit this->cmapCursorPosChanged(value);
             }

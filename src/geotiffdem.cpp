@@ -358,7 +358,7 @@ void GeoTiffDEM::initializeGeoTiffDEM(fs::path demPath)
         if ( axis == "Latitude" || axis == "Longitude" )
             m_axes = LonLat;
         else if ( axis == "Easting" || axis == "Northing" )
-            m_axes = NorthEast;
+            m_axes = EastNorth;
         else
             m_axes = Pixels;
     }
@@ -374,9 +374,9 @@ void GeoTiffDEM::createGeoTiffDEMInfos(const OGRSpatialReference *spatialRef)
         axes = "Longitude [°] / Latitude [°] → Altitude [m]";
         unit = "°";
     }
-    else if ( m_axes == NorthEast )
+    else if ( m_axes == EastNorth )
     {
-        axes = "Northing [m] / Easting [m] → Altitude [m]";
+        axes = "Easting [m] / Northing [m] → Altitude [m]";
         unit = "m";
     }
     // Get DEM file size in human readable format
@@ -409,7 +409,7 @@ void GeoTiffDEM::createGeoTiffDEMInfos(const OGRSpatialReference *spatialRef)
     m_demInfos += fmt::format("    → Pixels sizes:                ({}{}, {}{})\n", m_dX, unit, m_dY, unit);
     m_demInfos += "  * Coordinate Reference System (CRS):\n";
     m_demInfos += fmt::format("{}", (wkt_ptr == nullptr) ? "No CRS available..." : wkt_ptr);
-    delete wkt_ptr;
+    CPLFree(wkt_ptr);
 }
 
 //################################################//

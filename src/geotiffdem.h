@@ -16,7 +16,7 @@ enum GeoTiffDEMAxesUnit
     /*! Longitude/Latitude referential in degrees.*/
     LonLat,
     /*! Northing/Easting referential in meters.*/
-    NorthEast,
+    EastNorth,
     /*! Undefined referential, fallback to pixels.*/
     Pixels
 };
