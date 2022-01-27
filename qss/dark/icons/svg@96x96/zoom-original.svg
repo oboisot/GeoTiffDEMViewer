@@ -16,7 +16,7 @@
    version="1.1"
    id="svg873"
    sodipodi:docname="zoom-original.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    inkscape:export-filename="/home/oboisot/Documents/GitHub/GeoTiffDEMViewer/qss/dark/icons/48x48/document-open.png"
    inkscape:export-xdpi="7.6799998"
    inkscape:export-ydpi="7.6799998">
@@ -28,7 +28,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -43,20 +43,21 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1057"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
      id="namedview875"
      showgrid="false"
      inkscape:zoom="5.6568543"
-     inkscape:cx="-7.3147057"
-     inkscape:cy="27.197613"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:cx="28.040633"
+     inkscape:cy="48.410816"
+     inkscape:window-x="1920"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg873"
      inkscape:snap-object-midpoints="true" />
   <g
-     id="g819">
+     id="g819"
+     transform="matrix(1.0666667,0,0,1.0666667,-3.2000016,-3.2000016)">
     <path
        sodipodi:nodetypes="cccccccc"
        inkscape:connector-curvature="0"

@@ -7,6 +7,7 @@ QToolBar {
 	min-height: 40px;
 	border-top: 1px solid #bebebe;
 	border-bottom: 1px solid #bebebe;
+	spacing: 1px;
 }
 
 QToolBar::separator {
@@ -49,43 +50,27 @@ QLabel {
 	color: #ffffff;
 }
 
-QPushButton, QToolButton, QPushButton::default, QToolButton::default {
-	min-height: 40px;
-	min-width: 40px;
-	border: 1px transparent;
+QPushButton, QToolButton,
+QPushButton:default, QToolButton:default {
+	min-height: 36px;
+	min-width: 36px;
+	border: none;
 	color: #ffffff;
 	background-color: #191919;
+	margin: 0px;
 }
 
 QPushButton:hover, QToolButton:hover {
 	border: 1px solid #d28140;
-	color: #ffffff;
-	background-color: #191919;
 }
 
 QPushButton:pressed, QToolButton:pressed {
 	border: 2px solid #d28140;
-	color: #ffffff;
 	background-color: rgba(100, 100, 100, 120);
 }
 
-/* QAction:checked {
-	border: 2px solid #d28140;
-	color: #ffffff;
-	background-color: rgba(100, 100, 100, 120);
-} */
-
-QPushButton:disabled {
-	border-style: solid;
-	border-top-color: transparent;
-	border-right-color: transparent;
-	border-left-color: transparent;
-	border-bottom-color: transparent;
-	border-bottom-width: 2px;
-	border-style: solid;
-	color: #808086;
-	padding-bottom: 1px;
-	background-color: #000000;
+QToolButton#selectionRectToolButton:hover {
+	border: 1px solid #ffffff;
 }
 
 QLineEdit {

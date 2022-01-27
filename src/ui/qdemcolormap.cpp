@@ -17,6 +17,7 @@ QDEMColorMap::QDEMColorMap()
     // QCustomPlot
     this->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     this->axisRect()->setupFullAxesBox(true);
+    this->setMouseTracking(true);
     // QCPColorMap
     m_cmap = new QCPColorMap(this->xAxis, this->yAxis);
     m_cmap->setInterpolate(false);
@@ -47,10 +48,40 @@ QDEMColorMap::QDEMColorMap()
     m_geolocationItem->topLeft->setParentAnchor(m_geolocationItemPosition->position);
     m_geolocationItem->topLeft->setCoords(-14, -28);
     // Selection rect
-    m_selectionRect = new QCPSelectionRect(this);
-    m_selectionRect->setPen(QPen(QColor(255, 0, 0)));
-    m_selectionRect->setBrush(Qt::NoBrush);
-    m_selectionRect->setVisible(false);
+    m_selectionRect = this->selectionRect();
+    QPen pen(QColor(210, 129, 64));
+    pen.setStyle(Qt::SolidLine);
+    pen.setWidth(1);
+    m_selectionRect->setPen(pen);
+    connect(m_selectionRect, &QCPSelectionRect::accepted, this, [=](const QRect &rect, QMouseEvent *event){
+        int width = rect.width(), height = rect.height(),
+            posX = event->pos().x(), posY = event->pos().y();
+        int posX0(0), posX1(0), posY0(0), posY1(0);
+        if ( width > 0 )
+        {
+            posX0 = posX - width;
+            posX1 = posX;
+        }
+        else
+        {
+            posX0 = posX;
+            posX1 = posX - width;
+        }
+        if ( height > 0 )
+        {
+            posY0 = posY - height;
+            posY1 = posY;
+        }
+        else
+        {
+            posY0 = posY;
+            posY1 = posY - height;
+        }
+        double X0, Y1, X1, Y0;
+        m_cmap->pixelsToCoords(posX0, posY0, X0, Y1);
+        m_cmap->pixelsToCoords(posX1, posY1, X1, Y0);
+        std::cout << fmt::format("X0 = {}\n X1 = {}\n Y0 = {}\n Y1 = {}\n", X0, X1, Y0, Y1) << std::endl;
+    });
 }
 
 // Destructor
@@ -145,15 +176,10 @@ void QDEMColorMap::plotDEM(bool axesEquals)
         m_cmap->rescaleDataRange(true);
         this->replotDEM(axesEquals);
         if ( m_selectionRectEnabled )
-        {
             this->setCursor(Qt::CrossCursor);
-            emit this->cursorChanged(Qt::CrossCursor);
-        }
         else
-        {
             this->setCursor(Qt::ArrowCursor);
-            emit this->cursorChanged(Qt::ArrowCursor);
-        }
+        emit this->cursorChanged(Qt::ArrowCursor);
         m_isPlotting = false;
     });
 }
@@ -325,6 +351,26 @@ void QDEMColorMap::setGeolocationCursorVisibility(const bool &visible)
     m_geolocationItem->setVisible(visible);
 }
 
+void QDEMColorMap::selectionRectEnabled(const bool &enabled)
+{
+    m_selectionRectEnabled = enabled;
+    if ( enabled )
+    {
+//        this->setInteraction(QCP::iRangeDrag, false);
+        this->setSelectionRectMode(QCP::srmSelect);
+//        this->setSelectionRectMode(QCP::srmZoom);
+        this->setCursor(Qt::CrossCursor);
+//        m_selectionRect->setVisible(true);
+    }
+    else
+    {
+//        this->setInteraction(QCP::iRangeDrag, true);
+        this->setSelectionRectMode(QCP::srmNone);
+        this->setCursor(Qt::ArrowCursor);
+//        m_selectionRect->setVisible(false);
+    }
+}
+
 /*********************
  * Private functions *
  *********************/
@@ -465,31 +511,34 @@ void QDEMColorMap::resizeEvent(QResizeEvent *event)
 
 void QDEMColorMap::mousePressEvent(QMouseEvent *event)
 {
-    if ( !m_isPlotting )
+    if ( !m_isPlotting && m_dem->isOpened() )
     {
-        if ( m_dem->isOpened() )
+        if ( event->button() == Qt::LeftButton )
         {
-            if ( event->button() == Qt::LeftButton )
+            if ( isMouseEventInCMapBBox(event->position()) )
             {
-                if ( isMouseEventInCMapBBox(event->position()) )
+                if ( m_selectionRectEnabled )
+                    m_isMousePressedInCmapBBox = false;
+                else
                 {
-                    setCursor(Qt::ClosedHandCursor);
+                    this->setCursor(Qt::ClosedHandCursor);
                     m_isMousePressedInCmapBBox = true;
                     m_mousePressPos = event->pos();
-                    QCustomPlot::mousePressEvent(event);
                 }
-                else if ( isMouseEventInCScaleRect(event->position()) )
+                QCustomPlot::mousePressEvent(event);
+            }
+            else if ( isMouseEventInCScaleRect(event->position()) )
+            {
+                if ( !m_selectionRectEnabled )
                 {
-                    setCursor(Qt::ClosedHandCursor);
+                    this->setCursor(Qt::ClosedHandCursor);
                     m_isMousePressedInCmapBBox = false;
                     QCustomPlot::mousePressEvent(event);
                 }
-                else
-                    event->ignore();
             }
+            else
+                event->ignore();
         }
-        else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
     }
     else
         event->ignore();
@@ -499,7 +548,10 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
 {
     if ( !m_isPlotting )
     {
-        setCursor(Qt::ArrowCursor);
+        if ( m_selectionRectEnabled )
+            this->setCursor(Qt::CrossCursor);
+        else
+            this->setCursor(Qt::ArrowCursor);
         if ( m_dem->isOpened() )
         {
             if ( m_zoomLevel > 0 )
@@ -516,8 +568,6 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
                 }
             }
         }
-        else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
         QCustomPlot::mouseReleaseEvent(event);
     }
     else
@@ -526,39 +576,34 @@ void QDEMColorMap::mouseReleaseEvent(QMouseEvent *event)
 
 void QDEMColorMap::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if ( !m_isPlotting )
+    if ( !m_isPlotting && m_dem->isOpened() )
     {
-        if ( m_dem->isOpened() )
+        if ( event->button() == Qt::LeftButton )
         {
-            if ( event->button() == Qt::LeftButton )
+            if ( isMouseEventInCMapBBox(event->position()) )
             {
-                if ( isMouseEventInCMapBBox(event->position()) )
-                {
-                    double tX = this->xAxis->pixelToCoord(event->position().x()) - this->xAxis->range().center(),
-                           tY = this->yAxis->pixelToCoord(event->position().y()) - this->yAxis->range().center();
-                    this->zoomIn(2, tX, tY);
-                    QCustomPlot::mouseDoubleClickEvent(event);
-                }
-                else
-                    event->ignore();
+                double tX = this->xAxis->pixelToCoord(event->position().x()) - this->xAxis->range().center(),
+                       tY = this->yAxis->pixelToCoord(event->position().y()) - this->yAxis->range().center();
+                this->zoomIn(2, tX, tY);
+                QCustomPlot::mouseDoubleClickEvent(event);
             }
-            if ( event->button() == Qt::RightButton )
+            else
+                event->ignore();
+        }
+        if ( event->button() == Qt::RightButton )
+        {
+            if ( isMouseEventInCMapBBox(event->position()) )
             {
-                if ( isMouseEventInCMapBBox(event->position()) )
-                {
-                    double tX = this->xAxis->pixelToCoord(event->position().x()) - this->xAxis->range().center(),
-                           tY = this->yAxis->pixelToCoord(event->position().y()) - this->yAxis->range().center();
-                    this->zoomOut(2, tX, tY);
-                    QCustomPlot::mouseDoubleClickEvent(event);
-                }
-                else
-                    event->ignore();
+                double tX = this->xAxis->pixelToCoord(event->position().x()) - this->xAxis->range().center(),
+                       tY = this->yAxis->pixelToCoord(event->position().y()) - this->yAxis->range().center();
+                this->zoomOut(2, tX, tY);
+                QCustomPlot::mouseDoubleClickEvent(event);
             }
             else
                 event->ignore();
         }
         else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
+            event->ignore();
     }
     else
         event->ignore();
@@ -602,8 +647,6 @@ void QDEMColorMap::mouseMoveEvent(QMouseEvent *event)
                 emit this->cmapCursorPosChanged(value);
             }
         }
-        else
-            emit this->statusChanged("You must open a DEM", QDEMStatusColor::Error, 2500);
         QCustomPlot::mouseMoveEvent(event);
     }
     else

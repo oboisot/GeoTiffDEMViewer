@@ -15,7 +15,6 @@ GeoTiffDEMViewerWindow::GeoTiffDEMViewerWindow(QWidget *parent) : QMainWindow(pa
     // Create keyboard zoom shortcuts
     this->createShortcuts();
     // Main window
-    this->setMouseTracking(true);
     this->setGeometry(600, 180, 720, 720);
     this->setMinimumSize(720, 720);
     this->setWindowTitle("GeoTiff DEM Viewer");
@@ -85,10 +84,16 @@ void GeoTiffDEMViewerWindow::createToolBar()
     openAction->setObjectName("openAction");
     // Save plot action
     QAction *savePlotAction = new QAction("&Save as...");
-    savePlotAction->setShortcut(QKeySequence::SaveAs);
-    savePlotAction->setToolTip(QString("Save current plot (%1)").arg(QKeySequence(QKeySequence::SaveAs).toString()));
+    savePlotAction->setShortcut(QKeySequence::Save);
+    savePlotAction->setToolTip(QString("Save current plot (%1)").arg(QKeySequence(QKeySequence::Save).toString()));
     savePlotAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/document-save-as.svg"));
     toolBar->addAction(savePlotAction);
+    // Information action
+    QAction *infoAction = new QAction(tr("&Infos..."));
+    infoAction->setShortcut(QKeySequence(tr("Ctrl+I")));
+    infoAction->setToolTip(QString("DEM informations (Ctrl+I)"));
+    infoAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/dialog-information.svg"));
+    toolBar->addAction(infoAction);
     toolBar->addSeparator();
     // Reset zoom action
     QAction *resetZoomAction = new QAction("&Original view...");
@@ -114,21 +119,14 @@ void GeoTiffDEMViewerWindow::createToolBar()
                                   QKeySequence(Qt::CTRL | Qt::Key_Minus).toString()));
     zoomOutAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/zoom-out.svg"));
     toolBar->addAction(zoomOutAction);
-    toolBar->addSeparator();
     // Selection rect action
     QAction *selectionRectAction = new QAction("&Rect...");
-    selectionRectAction->setShortcut(QKeySequence(tr("Ctrl+A")));
-    selectionRectAction->setToolTip(QString("Selection area (Ctrl+A)"));
+    selectionRectAction->setShortcut(QKeySequence(tr("Ctrl+R")));
+    selectionRectAction->setToolTip(QString("Activate/Deactivate area selection (Ctrl+R)"));
     selectionRectAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/selection-rect.svg"));
     selectionRectAction->setCheckable(true);
     selectionRectAction->setChecked(false);
     toolBar->addAction(selectionRectAction);
-    // Information action
-    QAction *infoAction = new QAction(tr("&Infos..."));
-    infoAction->setShortcut(QKeySequence(tr("Ctrl+I")));
-    infoAction->setToolTip(QString("DEM informations (Ctrl+I)"));
-    infoAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/dialog-information.svg"));
-    toolBar->addAction(infoAction);
     toolBar->addSeparator();
     // Get altitude Widget
     toolBar->addWidget(this->createGetAltWidget());
@@ -140,11 +138,18 @@ void GeoTiffDEMViewerWindow::createToolBar()
     closeAction->setIcon(QIcon(":/qss/dark/icons/svg@96x96/application-exit.svg"));
     toolBar->addAction(closeAction);
     toolBar->addSeparator();
+    toolBar->setContextMenuPolicy(Qt::NoContextMenu);
     // Signals and slots
         // Open file action
     connect(openAction, &QAction::triggered, this, [=](){ this->openDEMFile(); });
         // Save plot action
     connect(savePlotAction, &QAction::triggered, this, [=](){ if ( m_demCmap->isDEMOpened() ) this->savePlot(); });
+        // Information action
+    connect(infoAction, &QAction::triggered, this, [&](){
+        QString infos(m_demCmap->getDEMinfos());
+        m_infosDialog->setText((infos == "") ? "No DEM opened." : infos);
+        m_infosDialog->open();
+    });
         // Reset zoom action
     connect(resetZoomAction, &QAction::triggered, this, [=](){ m_demCmap->resetZoom(); });
         // Zoom in action
@@ -152,11 +157,26 @@ void GeoTiffDEMViewerWindow::createToolBar()
         // Zoom out action
     connect(zoomOutAction, &QAction::triggered, this, [=](){ m_demCmap->zoomOut(); });
         // Selection rect action
-        // Information action
-    connect(infoAction, &QAction::triggered, this, [&](){
-        QString infos(m_demCmap->getDEMinfos());
-        m_infosDialog->setText((infos == "") ? "No DEM opened." : infos);
-        m_infosDialog->open();
+        // Note: the stylesheet is handled here, the size of the toolbutton associated to a checkable qaction changes when clicked,
+        //       this case is not handleable with the stylesheet directly... (the :unchecked or :off pseudo-states have no effects)
+    QToolButton *selectionRectToolButton = qobject_cast<QToolButton*>(toolBar->widgetForAction(selectionRectAction));
+    selectionRectToolButton->setObjectName("selectionRectToolButton");
+    connect(selectionRectAction, &QAction::toggled, this, [=](){
+        if ( selectionRectAction->isChecked() )
+        {
+            m_demCmap->selectionRectEnabled(true);
+            selectionRectToolButton->setStyleSheet("QToolButton { min-height: 32px; min-width: 32px; border: 2px solid #ffffff; background-color: rgba(255,255,255,100); }"
+                                                   "QToolButton:pressed { background-color: rgba(255,255,255,150); }");
+            this->setStatusLabel("Area selection activated", QDEMStatusColor::Normal, 2500);
+        }
+        else
+        {
+            m_demCmap->selectionRectEnabled(false);
+            selectionRectToolButton->setStyleSheet("QToolButton { min-height: 34px; min-width: 34px; border: none; background-color: #191919; margin: 0px; }"
+                                                   "QToolButton:hover { border: 1px solid #ffffff; }"
+                                                   "QToolButton:pressed { border: 2px solid #ffffff; background-color: rgba(100,100,100,120); }");
+            this->setStatusLabel("Area selection deactivated", QDEMStatusColor::Normal, 2500);
+        }
     });
         // Close application action
     connect(closeAction, &QAction::triggered, this, [=](){ this->close(); });

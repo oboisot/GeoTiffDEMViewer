@@ -59,6 +59,7 @@ public:
     void zoomTo(const int &zoomLevel, const double &tX=0.0, const double &tY=0.0);
     void setGeolocationCursorPosition(const double &X, const double &Y);
     void setGeolocationCursorVisibility(const bool &visible);
+    void selectionRectEnabled(const bool &enabled);
 
 signals:
     void statusChanged(const QString &status, const QDEMStatusColor &color, const int &msec=0);
