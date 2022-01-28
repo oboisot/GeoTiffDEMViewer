@@ -70,6 +70,8 @@ signals:
 
 private slots:
     void onProgressChanged(const double &progress);
+    void onSelectionRectStarted(QMouseEvent *event);
+    void onSelectionRectAccepted(const QRect &rect, QMouseEvent *event);
 
 protected:
     virtual void resizeEvent(QResizeEvent *event) override;

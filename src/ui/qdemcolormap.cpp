@@ -53,35 +53,8 @@ QDEMColorMap::QDEMColorMap()
     pen.setStyle(Qt::SolidLine);
     pen.setWidth(1);
     m_selectionRect->setPen(pen);
-    connect(m_selectionRect, &QCPSelectionRect::accepted, this, [=](const QRect &rect, QMouseEvent *event){
-        int width = rect.width(), height = rect.height(),
-            posX = event->pos().x(), posY = event->pos().y();
-        int posX0(0), posX1(0), posY0(0), posY1(0);
-        if ( width > 0 )
-        {
-            posX0 = posX - width;
-            posX1 = posX;
-        }
-        else
-        {
-            posX0 = posX;
-            posX1 = posX - width;
-        }
-        if ( height > 0 )
-        {
-            posY0 = posY - height;
-            posY1 = posY;
-        }
-        else
-        {
-            posY0 = posY;
-            posY1 = posY - height;
-        }
-        double X0, Y1, X1, Y0;
-        m_cmap->pixelsToCoords(posX0, posY0, X0, Y1);
-        m_cmap->pixelsToCoords(posX1, posY1, X1, Y0);
-        std::cout << fmt::format("X0 = {}\n X1 = {}\n Y0 = {}\n Y1 = {}\n", X0, X1, Y0, Y1) << std::endl;
-    });
+    connect(m_selectionRect, SIGNAL(started(QMouseEvent*)), this, SLOT(onSelectionRectStarted(QMouseEvent*)));
+    connect(m_selectionRect, SIGNAL(accepted(const QRect&, QMouseEvent*)), this, SLOT(onSelectionRectAccepted(const QRect&, QMouseEvent*)));
 }
 
 // Destructor
@@ -360,14 +333,12 @@ void QDEMColorMap::selectionRectEnabled(const bool &enabled)
         this->setSelectionRectMode(QCP::srmSelect);
 //        this->setSelectionRectMode(QCP::srmZoom);
         this->setCursor(Qt::CrossCursor);
-//        m_selectionRect->setVisible(true);
     }
     else
     {
 //        this->setInteraction(QCP::iRangeDrag, true);
         this->setSelectionRectMode(QCP::srmNone);
         this->setCursor(Qt::ArrowCursor);
-//        m_selectionRect->setVisible(false);
     }
 }
 
@@ -497,6 +468,40 @@ void QDEMColorMap::computeZoomOutFactors(const int &zoomStep, double &zf, double
  * SLOTS *
  *********/
 void QDEMColorMap::onProgressChanged(const double &progress){ emit this->progressChanged(progress); }
+void QDEMColorMap::onSelectionRectStarted(QMouseEvent *event)
+{
+    std::cout << "selection rect started" << std::endl;
+}
+void QDEMColorMap::onSelectionRectAccepted(const QRect &rect, QMouseEvent *event)
+{
+    int width = rect.width(), height = rect.height(),
+        posX = event->pos().x(), posY = event->pos().y();
+    int posX0(0), posX1(0), posY0(0), posY1(0);
+    if ( width > 0 )
+    {
+        posX0 = posX - width;
+        posX1 = posX;
+    }
+    else
+    {
+        posX0 = posX;
+        posX1 = posX - width;
+    }
+    if ( height > 0 )
+    {
+        posY0 = posY - height;
+        posY1 = posY;
+    }
+    else
+    {
+        posY0 = posY;
+        posY1 = posY - height;
+    }
+    double X0, Y1, X1, Y0;
+    m_cmap->pixelsToCoords(posX0, posY0, X0, Y1);
+    m_cmap->pixelsToCoords(posX1, posY1, X1, Y0);
+    std::cout << fmt::format("X0 = {}\n X1 = {}\n Y0 = {}\n Y1 = {}\n", X0, X1, Y0, Y1);
+}
 
 /*********
  * EVENTS *
