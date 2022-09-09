@@ -16,8 +16,8 @@ set(CMAKE_AUTOUIC ON)
 
 # Set MSYS2 path
 if (WIN32)
-#    set(MSYS2_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal (MSVCRT)
-    set(MSYS2_PATH "D:/oboisot/msys64/ucrt64") # MSYS2 mingw-w64-x86_64-gdal (UCRT)
+    set(MSYS2_PATH "D:/oboisot/msys64/mingw64") # MSYS2 mingw-w64-x86_64-gdal (MSVCRT)
+#    set(MSYS2_PATH "D:/oboisot/msys64/ucrt64") # MSYS2 mingw-w64-x86_64-gdal (UCRT)
 endif()
 
 ###################
@@ -63,12 +63,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC libs/qcustomplot) # QCustomPlo
 ################
 # Ajout du path 'anaconda' pour la recherche de librairie pour CMake
 if (WIN32)
-    set(GDAL_CUSTOM_PATH MSYS2_PATH)
+    set(GDAL_CUSTOM_PATH ${MSYS2_PATH})
 else()
     set(GDAL_CUSTOM_PATH "/home/oboisot/anaconda3") # Anaconda3 gdal
 endif()
 # Append lib and include directories to CMAKE_PREFIX_PATH
 list(APPEND CMAKE_PREFIX_PATH "${GDAL_CUSTOM_PATH}/lib" "${GDAL_CUSTOM_PATH}/include")
+
+message("GDAL_CUSTOM_PATH = ${GDAL_CUSTOM_PATH}")
+message("MSYS2_PATH = ${MSYS2_PATH}")
 
 find_package(GDAL REQUIRED)
 message("   -> GDAL include dir: ${GDAL_INCLUDE_DIRS}")
